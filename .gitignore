@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production build output
+dist/
+**/dist/
+
+# Environment variables & sensitive info (CRITICAL)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# AI Assistant tools & configs
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+**/.agents/
+**/.claude/
+**/.windsurf/
+**/skills-lock.json
+
+# Prisma generated client
+**/generated/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
