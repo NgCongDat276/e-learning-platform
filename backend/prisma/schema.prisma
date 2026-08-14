@@ -1,0 +1,356 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model bank_question_options {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question_id                 String                        @db.Uuid
+  content                     String
+  is_correct                  Boolean                       @default(false)
+  order_index                 Int
+  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  bank_questions              bank_questions                @relation(fields: [question_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quiz_attempt_answer_options quiz_attempt_answer_options[]
+
+  @@unique([question_id, order_index])
+  @@index([question_id], map: "idx_bank_question_options_question_id")
+}
+
+model bank_questions {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bank_id                String                   @db.Uuid
+  content                String
+  question_type          question_type            @default(single_choice)
+  points                 Int                      @default(1)
+  difficulty             difficulty               @default(easy)
+  topic                  String
+  order_index            Int
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  bank_question_options  bank_question_options[]
+  question_banks         question_banks           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quiz_attempt_questions quiz_attempt_questions[]
+
+  @@unique([bank_id, order_index])
+  @@index([bank_id], map: "idx_bank_questions_bank_id")
+}
+
+model chapters {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id   String    @db.Uuid
+  title       String    @db.VarChar(255)
+  order_index Int
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  courses     courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lessons     lessons[]
+
+  @@unique([course_id, order_index])
+  @@index([course_id], map: "idx_chapters_course_id")
+}
+
+model comments {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String          @db.Uuid
+  lesson_id         String          @db.Uuid
+  parent_comment_id String?         @db.Uuid
+  content           String
+  status            comment_status? @default(approved)
+  created_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  lessons           lessons         @relation(fields: [lesson_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comments          comments?       @relation("commentsTocomments", fields: [parent_comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  other_comments    comments[]      @relation("commentsTocomments")
+  users             users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lesson_id], map: "idx_comments_lesson_id")
+  @@index([parent_comment_id], map: "idx_comments_parent_id")
+}
+
+model courses {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String           @db.VarChar(255)
+  slug           String           @unique @db.VarChar(255)
+  description    String?
+  thumbnail_url  String?
+  price          Decimal?         @default(0.00) @db.Decimal(10, 2)
+  level          course_level?    @default(beginner)
+  status         course_status?   @default(draft)
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  lecturer_id    String           @db.Uuid
+  chapters       chapters[]
+  users          users            @relation(fields: [lecturer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  enrollments    enrollments[]
+  question_banks question_banks[]
+
+  @@index([lecturer_id], map: "idx_courses_lecturer_id")
+  @@index([slug], map: "idx_courses_slug")
+}
+
+model enrollments {
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String             @db.Uuid
+  course_id   String             @db.Uuid
+  status      enrollment_status? @default(active)
+  enrolled_at DateTime?          @default(now()) @db.Timestamptz(6)
+  courses     courses            @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, course_id])
+  @@index([course_id], map: "idx_enrollments_course_id")
+  @@index([user_id], map: "idx_enrollments_user_id")
+}
+
+model lecturer_requests {
+  id                                         String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                                    String                   @unique @db.Uuid
+  note                                       String?
+  status                                     lecturer_request_status? @default(pending)
+  reviewed_by                                String?                  @db.Uuid
+  reviewed_at                                DateTime?                @db.Timestamptz(6)
+  created_at                                 DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime?                @default(now()) @db.Timestamptz(6)
+  users_lecturer_requests_reviewed_byTousers users?                   @relation("lecturer_requests_reviewed_byTousers", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_lecturer_requests_user_idTousers     users                    @relation("lecturer_requests_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status], map: "idx_lecturer_requests_status")
+}
+
+model lesson_progress {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String    @db.Uuid
+  lesson_id             String    @db.Uuid
+  is_completed          Boolean?  @default(false)
+  last_watched_position Int?      @default(0)
+  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
+  lessons               lessons   @relation(fields: [lesson_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, lesson_id])
+  @@index([user_id], map: "idx_lesson_progress_user_id")
+}
+
+model lessons {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String            @db.VarChar(255)
+  lesson_type      lesson_type
+  content_url      String?
+  duration_seconds Int?              @default(0)
+  order_index      Int
+  created_at       DateTime?         @default(now()) @db.Timestamptz(6)
+  chapter_id       String            @db.Uuid
+  lesson_content   String?
+  comments         comments[]
+  lesson_progress  lesson_progress[]
+  chapters         chapters          @relation(fields: [chapter_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quizzes          quizzes[]
+
+  @@unique([chapter_id, order_index], map: "uniq_lessons_chapter_order")
+  @@index([chapter_id], map: "idx_lessons_chapter_id")
+}
+
+model question_banks {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id           String                @db.Uuid
+  title               String                @db.VarChar(255)
+  description         String?
+  is_active           Boolean               @default(true)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  bank_questions      bank_questions[]
+  courses             courses               @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quiz_question_rules quiz_question_rules[]
+
+  @@index([course_id], map: "idx_question_banks_course_id")
+}
+
+model quiz_attempt_answer_options {
+  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_answer_id       String                @db.Uuid
+  bank_question_option_id String                @db.Uuid
+  created_at              DateTime?             @default(now()) @db.Timestamptz(6)
+  quiz_attempt_answers    quiz_attempt_answers  @relation(fields: [attempt_answer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bank_question_options   bank_question_options @relation(fields: [bank_question_option_id], references: [id], onUpdate: NoAction)
+
+  @@unique([attempt_answer_id, bank_question_option_id])
+  @@index([attempt_answer_id], map: "idx_quiz_attempt_answer_options_attempt_answer_id")
+}
+
+model quiz_attempt_answers {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_question_id         String                        @unique @db.Uuid
+  is_correct                  Boolean?
+  points_earned               Int                           @default(0)
+  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  quiz_attempt_answer_options quiz_attempt_answer_options[]
+  quiz_attempt_questions      quiz_attempt_questions        @relation(fields: [attempt_question_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([attempt_question_id], map: "idx_quiz_attempt_answers_attempt_question_id")
+}
+
+model quiz_attempt_questions {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_id             String                @db.Uuid
+  bank_question_id       String                @db.Uuid
+  content_snapshot       String
+  question_type_snapshot question_type
+  points_snapshot        Int
+  order_index            Int
+  created_at             DateTime?             @default(now()) @db.Timestamptz(6)
+  quiz_attempt_answers   quiz_attempt_answers?
+  quiz_attempts          quiz_attempts         @relation(fields: [attempt_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bank_questions         bank_questions        @relation(fields: [bank_question_id], references: [id], onUpdate: NoAction)
+
+  @@unique([attempt_id, bank_question_id])
+  @@unique([attempt_id, order_index])
+  @@index([attempt_id], map: "idx_quiz_attempt_questions_attempt_id")
+}
+
+model quiz_attempts {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quiz_id                String                   @db.Uuid
+  user_id                String                   @db.Uuid
+  attempt_number         Int
+  status                 String                   @default("in_progress") @db.VarChar(20)
+  score                  Int                      @default(0)
+  is_passed              Boolean                  @default(false)
+  started_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  submitted_at           DateTime?                @db.Timestamptz(6)
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  quiz_attempt_questions quiz_attempt_questions[]
+  quizzes                quizzes                  @relation(fields: [quiz_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([quiz_id, user_id, attempt_number])
+  @@index([quiz_id], map: "idx_quiz_attempts_quiz_id")
+  @@index([user_id], map: "idx_quiz_attempts_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quiz_question_rules {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quiz_id             String         @db.Uuid
+  bank_id             String         @db.Uuid
+  question_count      Int
+  difficulty          difficulty?    @default(easy)
+  topic               String?        @db.VarChar(255)
+  points_per_question Int?           @default(1)
+  created_at          DateTime?      @default(now()) @db.Timestamptz(6)
+  question_banks      question_banks @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quizzes             quizzes        @relation(fields: [quiz_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([quiz_id, bank_id, difficulty, topic], map: "uq_quiz_rule")
+  @@index([bank_id], map: "idx_quiz_question_rules_bank_id")
+  @@index([quiz_id], map: "idx_quiz_question_rules_quiz_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quizzes {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lesson_id            String                @db.Uuid
+  title                String?               @db.VarChar(255)
+  description          String?
+  passing_score        Int                   @default(60)
+  time_limit_minutes   Int?
+  max_attempts         Int                   @default(1)
+  shuffle_questions    Boolean               @default(true)
+  shuffle_options      Boolean               @default(true)
+  show_correct_answers Boolean               @default(false)
+  created_at           DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?             @default(now()) @db.Timestamptz(6)
+  quiz_attempts        quiz_attempts[]
+  quiz_question_rules  quiz_question_rules[]
+  lessons              lessons               @relation(fields: [lesson_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model teacher_profile {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @unique @db.Uuid
+  degree       String?
+  certificates String?
+  cv_url       String?
+  expertise    String?
+  bio          String?
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model users {
+  id                                                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                                                  String              @unique @db.VarChar(255)
+  password_hash                                          String              @db.VarChar(255)
+  full_name                                              String              @db.VarChar(100)
+  avatar_url                                             String?
+  role                                                   user_role?          @default(student)
+  is_active                                              Boolean?            @default(true)
+  created_at                                             DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at                                             DateTime?           @default(now()) @db.Timestamptz(6)
+  comments                                               comments[]
+  courses                                                courses[]
+  enrollments                                            enrollments[]
+  lecturer_requests_lecturer_requests_reviewed_byTousers lecturer_requests[] @relation("lecturer_requests_reviewed_byTousers")
+  lecturer_requests_lecturer_requests_user_idTousers     lecturer_requests?  @relation("lecturer_requests_user_idTousers")
+  lesson_progress                                        lesson_progress[]
+  quiz_attempts                                          quiz_attempts[]
+  teacher_profile                                        teacher_profile?
+
+  @@index([email], map: "idx_users_email")
+}
+
+enum comment_status {
+  approved
+  pending
+  rejected
+}
+
+enum course_level {
+  beginner
+  intermediate
+  advanced
+}
+
+enum course_status {
+  draft
+  published
+  hidden
+}
+
+enum difficulty {
+  easy
+  medium
+  hard
+}
+
+enum enrollment_status {
+  active
+  completed
+  cancelled
+}
+
+enum lecturer_request_status {
+  pending
+  approved
+  rejected
+}
+
+enum lesson_type {
+  video
+  quiz
+  text
+}
+
+enum question_type {
+  single_choice
+  multiple_choice
+}
+
+enum user_role {
+  student
+  admin
+  lecturer
+}
