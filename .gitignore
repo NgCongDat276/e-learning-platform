@@ -37,3 +37,7 @@ skills-lock.json
 Thumbs.db
 .vscode/
 .idea/
+
+# Local docs
+doc_updated.md
+plan.md
