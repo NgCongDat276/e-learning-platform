@@ -10,6 +10,9 @@ import {
   ClockCircleOutlined,
   BookOutlined,
 } from '@ant-design/icons';
+import { AuthLayout } from '../layouts/AuthLayout';
+import { LoginPage } from '../pages/auth/LoginPage';
+import { RegisterPage } from '../pages/auth/RegisterPage';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -268,63 +271,7 @@ const HomePage: React.FC = () => {
   );
 };
 
-// 2. Trang Đăng nhập tạm thời
-const LoginPage: React.FC = () => {
-  const { token } = theme.useToken();
-  return (
-    <div style={{ maxWidth: 440, margin: '80px auto', padding: 24 }}>
-      <Card
-        style={{
-          borderColor: token.colorBorder,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: 'var(--shadow-hard)',
-        }}
-      >
-        <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          Đăng nhập tài khoản
-        </Title>
-        <Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 24 }}>
-          Trang Đăng Nhập sẽ được kết nối ở Module Auth (JWT).
-        </Paragraph>
-        <Link to="/">
-          <Button block type="primary" size="large">
-            Quay về Trang chủ
-          </Button>
-        </Link>
-      </Card>
-    </div>
-  );
-};
-
-// 3. Trang Đăng ký tạm thời
-const RegisterPage: React.FC = () => {
-  const { token } = theme.useToken();
-  return (
-    <div style={{ maxWidth: 440, margin: '80px auto', padding: 24 }}>
-      <Card
-        style={{
-          borderColor: token.colorBorder,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: 'var(--shadow-hard)',
-        }}
-      >
-        <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          Đăng ký tài khoản
-        </Title>
-        <Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 24 }}>
-          Trang Đăng Ký sẽ được kết nối ở Module Auth (JWT).
-        </Paragraph>
-        <Link to="/">
-          <Button block type="primary" size="large">
-            Quay về Trang chủ
-          </Button>
-        </Link>
-      </Card>
-    </div>
-  );
-};
-
-// 4. Trang 404
+// 2. Trang 404
 const NotFoundPage: React.FC = () => (
   <div style={{ padding: '80px 24px', textAlign: 'center' }}>
     <Title level={2}>404 — Không tìm thấy trang</Title>
@@ -339,8 +286,13 @@ export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+
+      {/* Auth routes bọc trong AuthLayout Split-screen */}
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

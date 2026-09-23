@@ -35,24 +35,50 @@ export class AuthService {
     // 1.2 Băm mật khẩu bảo mật bằng bcryptjs
     const hashedPassword = await hashPassword(data.password);
 
-    // 1.3 Lưu người dùng mới vào PostgreSQL qua Prisma
-    const newUser = await prisma.users.create({
-      data: {
-        email: data.email,
-        password_hash: hashedPassword,
-        full_name: data.full_name,
-        role: data.role || user_role.student,
-        is_active: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        full_name: true,
-        avatar_url: true,
-        role: true,
-        is_active: true,
-        created_at: true,
-      },
+    // 1.3 Lưu người dùng mới vào PostgreSQL qua Prisma Transaction
+    const newUser = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.users.create({
+        data: {
+          email: data.email,
+          password_hash: hashedPassword,
+          full_name: data.full_name,
+          role: data.role || user_role.student,
+          is_active: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          full_name: true,
+          avatar_url: true,
+          role: true,
+          is_active: true,
+          created_at: true,
+        },
+      });
+
+      // Nếu là giảng viên, tạo thêm hồ sơ năng lực và yêu cầu phê duyệt
+      if (data.role === user_role.lecturer) {
+        await tx.teacher_profile.create({
+          data: {
+            user_id: createdUser.id,
+            degree: data.degree || null,
+            expertise: data.expertise || null,
+            bio: data.bio || null,
+            certificates: data.certificates || null,
+            cv_url: data.cv_url || null,
+          },
+        });
+
+        await tx.lecturer_requests.create({
+          data: {
+            user_id: createdUser.id,
+            status: "pending",
+            note: "Hồ sơ đăng ký giảng viên mới từ hệ thống",
+          },
+        });
+      }
+
+      return createdUser;
     });
 
     // 1.4 Tạo cặp token cho phiên đăng nhập đầu tiên
@@ -163,6 +189,15 @@ export class AuthService {
         role: true,
         is_active: true,
         created_at: true,
+        teacher_profile: {
+          select: {
+            degree: true,
+            expertise: true,
+            bio: true,
+            certificates: true,
+            cv_url: true,
+          },
+        },
       },
     });
 

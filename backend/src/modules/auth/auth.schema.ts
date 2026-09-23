@@ -25,6 +25,50 @@ export const registerSchema = z.object({
       error: "Vai trò chỉ có thể là student hoặc lecturer",
     })
     .default(user_role.student),
+  // Các trường bổ sung dành riêng cho hồ sơ Giảng viên (Teacher Profile)
+  degree: z
+    .string()
+    .trim()
+    .max(100, "Bằng cấp không được vượt quá 100 ký tự")
+    .optional(),
+  expertise: z
+    .string()
+    .trim()
+    .max(255, "Lĩnh vực chuyên môn không được vượt quá 255 ký tự")
+    .optional(),
+  bio: z
+    .string()
+    .trim()
+    .max(1000, "Tiểu sử không được vượt quá 1000 ký tự")
+    .optional(),
+  certificates: z
+    .string()
+    .trim()
+    .max(500, "Chứng chỉ không được vượt quá 500 ký tự")
+    .optional(),
+  cv_url: z
+    .string()
+    .trim()
+    .url("Định dạng đường dẫn liên kết CV không hợp lệ")
+    .optional()
+    .or(z.literal("")),
+}).superRefine((data, ctx) => {
+  if (data.role === user_role.lecturer) {
+    if (!data.degree || data.degree.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Giảng viên vui lòng cung cấp học vị / bằng cấp cao nhất",
+        path: ["degree"],
+      });
+    }
+    if (!data.expertise || data.expertise.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Giảng viên vui lòng nhập lĩnh vực chuyên môn chính",
+        path: ["expertise"],
+      });
+    }
+  }
 });
 
 /**

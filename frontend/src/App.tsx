@@ -3,6 +3,7 @@ import { ConfigProvider, App as AntdApp } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './routes/AppRoutes';
 import { lmsThemeConfig } from './theme/themeConfig';
+import { AuthProvider } from './context/AuthContext';
 
 // Khởi tạo QueryClient cho toàn bộ ứng dụng
 const queryClient = new QueryClient({
@@ -20,7 +21,9 @@ function App() {
       <ConfigProvider theme={lmsThemeConfig}>
         <AntdApp>
           <BrowserRouter>
-            <AppRoutes />
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
           </BrowserRouter>
         </AntdApp>
       </ConfigProvider>
