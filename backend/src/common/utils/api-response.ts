@@ -1,9 +1,6 @@
-import { Response } from 'express';
-import { HttpStatus, HttpStatusCode } from '../errors/http-status';
+import { Response } from "express";
+import { HttpStatus, HttpStatusCode } from "../errors/http-status";
 
-/**
- * Thông tin phân trang chuẩn cho các API trả về danh sách
- */
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -29,9 +26,9 @@ export interface ApiResponse<T = any> {
 export const sendSuccess = <T>(
   res: Response,
   data: T,
-  message: string = 'Thao tác thành công',
+  message: string = "Thao tác thành công",
   statusCode: HttpStatusCode = HttpStatus.OK,
-  pagination?: PaginationMeta
+  pagination?: PaginationMeta,
 ): Response => {
   const responsePayload: ApiResponse<T> = {
     success: true,
@@ -50,7 +47,7 @@ export const sendSuccess = <T>(
 export const sendCreated = <T>(
   res: Response,
   data: T,
-  message: string = 'Tạo mới thành công'
+  message: string = "Tạo mới thành công",
 ): Response => {
   return sendSuccess(res, data, message, HttpStatus.CREATED);
 };
@@ -60,9 +57,9 @@ export const sendCreated = <T>(
  */
 export const sendError = (
   res: Response,
-  message: string = 'Đã có lỗi xảy ra',
+  message: string = "Đã có lỗi xảy ra",
   statusCode: HttpStatusCode = HttpStatus.INTERNAL_SERVER_ERROR,
-  errors?: any
+  errors?: any,
 ): Response => {
   const responsePayload: ApiResponse = {
     success: false,
