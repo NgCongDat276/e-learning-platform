@@ -4,7 +4,7 @@ import {
   Form,
   Input,
   Button,
-  Checkbox,
+  // Checkbox,
   Card,
   Typography,
   Space,
@@ -28,8 +28,23 @@ import {
   ReadOutlined,
   SolutionOutlined,
 } from '@ant-design/icons';
-import { useAuth } from '../../context/AuthContext';
+import { isAxiosError } from 'axios';
+import { useAuth } from '../../context/useAuth';
 import type { RegisterRequest } from '../../types/auth.types';
+import type { ApiResponse } from '../../types/api';
+
+interface RegisterFormValues {
+  full_name: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
+  degree?: string;
+  expertise?: string;
+  certificates?: string;
+  cv_url?: string;
+  bio?: string;
+  agreement?: boolean;
+}
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -51,7 +66,7 @@ export const RegisterPage: React.FC = () => {
     form.setFieldsValue({ role: selectedRole });
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: RegisterFormValues) => {
     setLoading(true);
     setErrorMessage(null);
 
@@ -74,15 +89,17 @@ export const RegisterPage: React.FC = () => {
       await register(payload);
       message.success(
         role === 'lecturer'
-          ? 'Đăng ký hồ sơ Giảng viên thành công! Hồ sơ đã gửi đến ban học thuật.'
-          : 'Đăng ký tài khoản Học viên thành công! Chào mừng bạn gia nhập EDUTECH.'
+          ? 'Lecturer application submitted successfully! Your profile has been sent for review.'
+          : 'Student account created successfully! Welcome to EDUTECH.'
       );
       navigate('/');
-    } catch (error: any) {
-      const msg =
-        error.response?.data?.message ||
-        error.message ||
-        'Đăng ký không thành công. Vui lòng kiểm tra lại thông tin đã điền.';
+    } catch (error: unknown) {
+      let msg = 'Registration failed. Please check the information provided.';
+      if (isAxiosError<ApiResponse>(error)) {
+        msg = error.response?.data?.message || error.message || msg;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -107,17 +124,17 @@ export const RegisterPage: React.FC = () => {
       {/* Header Form */}
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <Title level={2} style={{ fontSize: 26, margin: '0 0 6px 0', letterSpacing: -0.5 }}>
-          Đăng ký tài khoản mới
+          Create New Account
         </Title>
         <Paragraph type="secondary" style={{ fontSize: 14, margin: 0 }}>
-          Tham gia cộng đồng học tập và giảng dạy thực chiến chất lượng cao
+          Join our high-quality practical learning and teaching community
         </Paragraph>
       </div>
 
       {/* Role Selection Switcher */}
       <div style={{ marginBottom: 28 }}>
         <Text strong style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
-          Bạn muốn tham gia hệ thống với vai trò nào?
+          Which role describes you best?
         </Text>
         <Segmented
           block
@@ -129,7 +146,7 @@ export const RegisterPage: React.FC = () => {
               label: (
                 <div style={{ padding: '6px 0' }}>
                   <ReadOutlined style={{ marginRight: 8, color: role === 'student' ? token.colorText : undefined }} />
-                  <span style={{ fontWeight: role === 'student' ? 600 : 400 }}>Học viên (Student)</span>
+                  <span style={{ fontWeight: role === 'student' ? 600 : 400 }}>Student</span>
                 </div>
               ),
               value: 'student',
@@ -138,7 +155,7 @@ export const RegisterPage: React.FC = () => {
               label: (
                 <div style={{ padding: '6px 0' }}>
                   <SolutionOutlined style={{ marginRight: 8, color: role === 'lecturer' ? token.colorText : undefined }} />
-                  <span style={{ fontWeight: role === 'lecturer' ? 600 : 400 }}>Giảng viên (Lecturer)</span>
+                  <span style={{ fontWeight: role === 'lecturer' ? 600 : 400 }}>Lecturer</span>
                 </div>
               ),
               value: 'lecturer',
@@ -175,7 +192,7 @@ export const RegisterPage: React.FC = () => {
         initialValues={{ role: 'student', agreement: true }}
         requiredMark={false}
       >
-        {/* SECTION 1: THÔNG TIN TÀI KHOẢN CỐT LÕI */}
+        {/* SECTION 1: ACCOUNT INFORMATION */}
         <div style={{ marginBottom: role === 'lecturer' ? 24 : 12 }}>
           <div
             style={{
@@ -188,27 +205,27 @@ export const RegisterPage: React.FC = () => {
             }}
           >
             <Text strong style={{ fontSize: 14, color: token.colorText }}>
-              1. Thông tin tài khoản đăng nhập
+              1. Account Information
             </Text>
             <Tag style={{ borderRadius: 9999, border: `1px solid ${token.colorBorder}` }}>
-              Bắt buộc
+              Required
             </Tag>
           </div>
 
           <Row gutter={[16, 0]}>
             <Col xs={24} md={12}>
               <Form.Item
-                label={<Text strong>Họ và tên</Text>}
+                label={<Text strong>Full Name</Text>}
                 name="full_name"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập họ và tên của bạn' },
-                  { min: 2, message: 'Họ và tên tối thiểu 2 ký tự' },
+                  { required: true, message: 'Please enter your full name' },
+                  { min: 2, message: 'Full name must be at least 2 characters' },
                 ]}
               >
                 <Input
                   size="large"
                   prefix={<UserOutlined style={{ color: token.colorTextSecondary }} />}
-                  placeholder="Nguyễn Văn A"
+                  placeholder="John Doe"
                   style={{ borderRadius: token.borderRadius }}
                 />
               </Form.Item>
@@ -216,11 +233,11 @@ export const RegisterPage: React.FC = () => {
 
             <Col xs={24} md={12}>
               <Form.Item
-                label={<Text strong>Địa chỉ Email</Text>}
+                label={<Text strong>Email Address</Text>}
                 name="email"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập địa chỉ email' },
-                  { type: 'email', message: 'Email không hợp lệ' },
+                  { required: true, message: 'Please enter your email address' },
+                  { type: 'email', message: 'Please enter a valid email address' },
                 ]}
               >
                 <Input
@@ -237,17 +254,17 @@ export const RegisterPage: React.FC = () => {
           <Row gutter={[16, 0]}>
             <Col xs={24} md={12}>
               <Form.Item
-                label={<Text strong>Mật khẩu</Text>}
+                label={<Text strong>Password</Text>}
                 name="password"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập mật khẩu' },
-                  { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' },
+                  { required: true, message: 'Please enter your password' },
+                  { min: 8, message: 'Password must be at least 8 characters' },
                 ]}
               >
                 <Input.Password
                   size="large"
                   prefix={<LockOutlined style={{ color: token.colorTextSecondary }} />}
-                  placeholder="Tối thiểu 8 ký tự"
+                  placeholder="At least 8 characters"
                   autoComplete="new-password"
                   style={{ borderRadius: token.borderRadius }}
                 />
@@ -256,17 +273,17 @@ export const RegisterPage: React.FC = () => {
 
             <Col xs={24} md={12}>
               <Form.Item
-                label={<Text strong>Xác nhận mật khẩu</Text>}
+                label={<Text strong>Confirm Password</Text>}
                 name="confirmPassword"
                 dependencies={['password']}
                 rules={[
-                  { required: true, message: 'Vui lòng xác nhận lại mật khẩu' },
+                  { required: true, message: 'Please confirm your password' },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       if (!value || getFieldValue('password') === value) {
                         return Promise.resolve();
                       }
-                      return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                      return Promise.reject(new Error('Passwords do not match!'));
                     },
                   }),
                 ]}
@@ -274,7 +291,7 @@ export const RegisterPage: React.FC = () => {
                 <Input.Password
                   size="large"
                   prefix={<SafetyCertificateOutlined style={{ color: token.colorTextSecondary }} />}
-                  placeholder="Nhập lại mật khẩu"
+                  placeholder="Re-enter password"
                   autoComplete="new-password"
                   style={{ borderRadius: token.borderRadius }}
                 />
@@ -283,7 +300,7 @@ export const RegisterPage: React.FC = () => {
           </Row>
         </div>
 
-        {/* SECTION 2: HỒ SƠ CHUYÊN MÔN (CHỈ HIỂN THỊ KHI ROLE LÀ LECTURER) */}
+        {/* SECTION 2: PROFESSIONAL PROFILE (LECTURER ONLY) */}
         {role === 'lecturer' && (
           <div
             style={{
@@ -306,7 +323,7 @@ export const RegisterPage: React.FC = () => {
               }}
             >
               <Text strong style={{ fontSize: 14, color: token.colorText }}>
-                2. Hồ sơ năng lực & Chuyên môn giảng dạy
+                2. Professional Profile & Teaching Expertise
               </Text>
               <Tag
                 style={{
@@ -318,41 +335,41 @@ export const RegisterPage: React.FC = () => {
                   fontSize: 11,
                 }}
               >
-                Dành cho Giảng viên
+                For Lecturers
               </Tag>
             </div>
 
             <Row gutter={[16, 0]}>
               <Col xs={24} md={12}>
                 <Form.Item
-                  label={<Text strong>Học vị / Bằng cấp cao nhất</Text>}
+                  label={<Text strong>Highest Degree / Qualification</Text>}
                   name="degree"
-                  rules={[{ required: true, message: 'Vui lòng chọn học vị hoặc bằng cấp' }]}
+                  rules={[{ required: true, message: 'Please select your qualification' }]}
                 >
                   <Select
                     size="large"
-                    placeholder="Chọn bằng cấp"
+                    placeholder="Select qualification"
                     style={{ width: '100%', borderRadius: token.borderRadius }}
                   >
-                    <Option value="Cử nhân">Cử nhân (Bachelor)</Option>
-                    <Option value="Kỹ sư">Kỹ sư (Engineer)</Option>
-                    <Option value="Thạc sĩ">Thạc sĩ (Master)</Option>
-                    <Option value="Tiến sĩ">Tiến sĩ (Ph.D)</Option>
-                    <Option value="Giáo sư / Phó Giáo sư">Giáo sư / Phó Giáo sư</Option>
-                    <Option value="Chuyên gia doanh nghiệp">Chuyên gia doanh nghiệp (Industry Expert)</Option>
+                    <Option value="Bachelor's Degree">Bachelor's Degree</Option>
+                    <Option value="Engineer's Degree">Engineer's Degree</Option>
+                    <Option value="Master's Degree">Master's Degree</Option>
+                    <Option value="Ph.D. / Doctorate">Ph.D. / Doctorate</Option>
+                    <Option value="Professor / Associate Professor">Professor / Associate Professor</Option>
+                    <Option value="Industry Expert">Industry Expert</Option>
                   </Select>
                 </Form.Item>
               </Col>
 
               <Col xs={24} md={12}>
                 <Form.Item
-                  label={<Text strong>Lĩnh vực chuyên môn chính</Text>}
+                  label={<Text strong>Primary Expertise</Text>}
                   name="expertise"
-                  rules={[{ required: true, message: 'Vui lòng nhập chuyên môn của bạn' }]}
+                  rules={[{ required: true, message: 'Please specify your primary expertise' }]}
                 >
                   <Input
                     size="large"
-                    placeholder="VD: Web Fullstack, AI, Mobile Dev..."
+                    placeholder="e.g., Fullstack Web Development, AI, Cloud Computing..."
                     style={{ borderRadius: token.borderRadius }}
                   />
                 </Form.Item>
@@ -362,17 +379,17 @@ export const RegisterPage: React.FC = () => {
             <Form.Item
               label={
                 <Space size={4}>
-                  <Text strong>Liên kết CV / Portfolio / LinkedIn</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>(Tùy chọn)</Text>
+                  <Text strong>CV / Portfolio / LinkedIn URL</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>(Optional)</Text>
                 </Space>
               }
               name="cv_url"
-              rules={[{ type: 'url', message: 'Đường dẫn URL không hợp lệ (cần có http:// hoặc https://)' }]}
+              rules={[{ type: 'url', message: 'Invalid URL format (must start with http:// or https://)' }]}
             >
               <Input
                 size="large"
                 prefix={<LinkOutlined style={{ color: token.colorTextSecondary }} />}
-                placeholder="https://linkedin.com/in/... hoặc link Drive hồ sơ"
+                placeholder="https://linkedin.com/in/... or Google Drive resume link"
                 style={{ borderRadius: token.borderRadius }}
               />
             </Form.Item>
@@ -380,15 +397,15 @@ export const RegisterPage: React.FC = () => {
             <Form.Item
               label={
                 <Space size={4}>
-                  <Text strong>Chứng chỉ chuyên môn nổi bật</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>(Tùy chọn)</Text>
+                  <Text strong>Professional Certifications</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>(Optional)</Text>
                 </Space>
               }
               name="certificates"
             >
               <Input
                 size="large"
-                placeholder="VD: AWS Solutions Architect, PMP, IELTS 8.0, Google Professional Cloud Developer..."
+                placeholder="e.g., AWS Solutions Architect, PMP, Google Cloud Professional..."
                 style={{ borderRadius: token.borderRadius }}
               />
             </Form.Item>
@@ -396,20 +413,20 @@ export const RegisterPage: React.FC = () => {
             <Form.Item
               label={
                 <Space size={4}>
-                  <Text strong>Tiểu sử & Kinh nghiệm giảng dạy</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>(Tùy chọn)</Text>
+                  <Text strong>Bio & Teaching Experience</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>(Optional)</Text>
                 </Space>
               }
               name="bio"
             >
               <Input.TextArea
                 rows={3}
-                placeholder="Tóm tắt ngắn gọn số năm kinh nghiệm, phương pháp giảng dạy và những dự án bạn từng triển khai..."
+                placeholder="Briefly summarize your years of experience, teaching methodology, and notable projects..."
                 style={{ borderRadius: token.borderRadius }}
               />
             </Form.Item>
 
-            {/* Thông báo quy trình xét duyệt hồ sơ Giảng viên */}
+            {/* Application Review Notice */}
             <div
               style={{
                 backgroundColor: '#dcfff1', // Mint Wash
@@ -422,16 +439,16 @@ export const RegisterPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <CheckCircleFilled style={{ color: token.colorSuccess, marginTop: 2, fontSize: 16 }} />
                 <div style={{ fontSize: 13, color: '#262626', lineHeight: 1.5 }}>
-                  <strong>Quy trình xét duyệt hồ sơ:</strong> Sau khi đăng ký thành công, hồ sơ của bạn sẽ
-                  được ban học thuật xác thực trong vòng <strong>24 giờ làm việc</strong> để mở quyền xuất bản
-                  khóa học. Bạn vẫn có thể đăng nhập ngay để làm quen với giao diện soạn bài giảng.
+                  <strong>Application Review Process:</strong> After registration, your profile will be
+                  verified by the academic board within <strong>24 business hours</strong> to enable course
+                  publishing permissions. You can still sign in immediately to explore the course creation workspace.
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Checkbox Đồng ý điều khoản */}
+        {/* Terms Agreement Checkbox */}
         <Form.Item
           name="agreement"
           valuePropName="checked"
@@ -440,25 +457,25 @@ export const RegisterPage: React.FC = () => {
               validator: (_, value) =>
                 value
                   ? Promise.resolve()
-                  : Promise.reject(new Error('Vui lòng chấp nhận Điều khoản dịch vụ để tiếp tục')),
+                  : Promise.reject(new Error('Please accept the Terms of Service to continue')),
             },
           ]}
           style={{ marginBottom: 24 }}
         >
-          <Checkbox style={{ fontSize: 13, color: token.colorTextSecondary }}>
-            Tôi đồng ý với{' '}
+          {/* <Checkbox style={{ fontSize: 13, color: token.colorTextSecondary }}>
+            I agree to the{' '}
             <Link to="/terms" style={{ color: token.colorText, textDecoration: 'underline' }}>
-              Điều khoản dịch vụ
+              Terms of Service
             </Link>{' '}
-            và{' '}
+            and{' '}
             <Link to="/privacy" style={{ color: token.colorText, textDecoration: 'underline' }}>
-              Chính sách bảo mật
+              Privacy Policy
             </Link>{' '}
-            của EDUTECH LMS.
-          </Checkbox>
+            of EDUTECH LMS.
+          </Checkbox> */}
         </Form.Item>
 
-        {/* Nút bấm Submit */}
+        {/* Submit Button */}
         <Form.Item style={{ marginBottom: 20 }}>
           <Button
             type="primary"
@@ -474,7 +491,7 @@ export const RegisterPage: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            {role === 'lecturer' ? 'Gửi hồ sơ đăng ký giảng viên' : 'Đăng ký tài khoản học ngay'}
+            {role === 'lecturer' ? 'Submit Lecturer Application' : 'Create Student Account'}
           </Button>
         </Form.Item>
       </Form>
@@ -488,7 +505,7 @@ export const RegisterPage: React.FC = () => {
           fontSize: 14,
         }}
       >
-        <Text type="secondary">Đã có tài khoản trên hệ thống? </Text>
+        <Text type="secondary">Already have an account? </Text>
         <Link
           to="/login"
           style={{
@@ -497,7 +514,7 @@ export const RegisterPage: React.FC = () => {
             textDecoration: 'underline',
           }}
         >
-          Đăng nhập ngay
+          Sign in here
         </Link>
       </div>
     </Card>

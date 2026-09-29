@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Checkbox, Card, Typography, Alert, App, theme } from 'antd';
 import { MailOutlined, LockOutlined, ArrowRightOutlined, LoginOutlined } from '@ant-design/icons';
-import { useAuth } from '../../context/AuthContext';
+import { isAxiosError } from 'axios';
+import { useAuth } from '../../context/useAuth';
 import type { LoginRequest } from '../../types/auth.types';
+import type { ApiResponse } from '../../types/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -27,13 +29,15 @@ export const LoginPage: React.FC = () => {
         password: values.password,
       });
 
-      message.success('Đăng nhập thành công! Chào mừng bạn quay trở lại.');
+      message.success('Sign in successful! Welcome back.');
       navigate('/');
-    } catch (error: any) {
-      const msg =
-        error.response?.data?.message ||
-        error.message ||
-        'Đăng nhập không thành công. Vui lòng kiểm tra lại email hoặc mật khẩu.';
+    } catch (error: unknown) {
+      let msg = 'Sign in failed. Please check your email or password.';
+      if (isAxiosError<ApiResponse>(error)) {
+        msg = error.response?.data?.message || error.message || msg;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -74,14 +78,14 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <Title level={2} style={{ fontSize: 26, margin: '0 0 6px 0', letterSpacing: -0.5 }}>
-          Đăng nhập tài khoản
+          Sign In
         </Title>
         <Paragraph type="secondary" style={{ fontSize: 14, margin: 0 }}>
-          Nhập thông tin xác thực để tiếp tục phiên học tập của bạn
+          Enter your credentials to continue your learning journey
         </Paragraph>
       </div>
 
-      {/* Error Alert nếu có lỗi */}
+      {/* Error Alert */}
       {errorMessage && (
         <Alert
           message={errorMessage}
@@ -95,7 +99,7 @@ export const LoginPage: React.FC = () => {
         />
       )}
 
-      {/* Form Đăng Nhập */}
+      {/* Sign In Form */}
       <Form
         form={form}
         layout="vertical"
@@ -104,11 +108,11 @@ export const LoginPage: React.FC = () => {
         requiredMark={false}
       >
         <Form.Item
-          label={<Text strong>Địa chỉ Email</Text>}
+          label={<Text strong>Email Address</Text>}
           name="email"
           rules={[
-            { required: true, message: 'Vui lòng nhập địa chỉ email của bạn' },
-            { type: 'email', message: 'Địa chỉ email không đúng định dạng' },
+            { required: true, message: 'Please enter your email address' },
+            { type: 'email', message: 'Please enter a valid email address' },
           ]}
         >
           <Input
@@ -121,9 +125,9 @@ export const LoginPage: React.FC = () => {
         </Form.Item>
 
         <Form.Item
-          label={<Text strong>Mật khẩu</Text>}
+          label={<Text strong>Password</Text>}
           name="password"
-          rules={[{ required: true, message: 'Vui lòng nhập mật khẩu của bạn' }]}
+          rules={[{ required: true, message: 'Please enter your password' }]}
         >
           <Input.Password
             size="large"
@@ -144,7 +148,7 @@ export const LoginPage: React.FC = () => {
         >
           <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox style={{ fontSize: 13, color: token.colorTextSecondary }}>
-              Ghi nhớ đăng nhập
+              Remember me
             </Checkbox>
           </Form.Item>
 
@@ -157,7 +161,7 @@ export const LoginPage: React.FC = () => {
               fontWeight: 500,
             }}
           >
-            Quên mật khẩu?
+            Forgot password?
           </Link>
         </div>
 
@@ -176,7 +180,7 @@ export const LoginPage: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            Đăng nhập vào hệ thống
+            Sign In
           </Button>
         </Form.Item>
       </Form>
@@ -190,7 +194,7 @@ export const LoginPage: React.FC = () => {
           fontSize: 14,
         }}
       >
-        <Text type="secondary">Chưa có tài khoản trên EDUTECH? </Text>
+        <Text type="secondary">Don't have an account on EDUTECH? </Text>
         <Link
           to="/register"
           style={{
@@ -199,7 +203,7 @@ export const LoginPage: React.FC = () => {
             textDecoration: 'underline',
           }}
         >
-          Đăng ký ngay
+          Sign up now
         </Link>
       </div>
     </Card>

@@ -1,53 +1,51 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User, LoginRequest, RegisterRequest } from '../types/auth.types';
 import { loginApi, registerApi, getMeApi } from '../api/auth.api';
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (data: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, type AuthContextType } from './auth.context';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    return !!localStorage.getItem('accessToken');
+  });
 
-  // Khôi phục phiên đăng nhập khi tải lại trang
-  const checkAuth = useCallback(async () => {
+  // Restore authenticated session on initial mount
+  useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+    if (!token) return;
 
-    try {
-      const response = await getMeApi();
-      if (response.success && response.data) {
-        setUser(response.data);
-      } else {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        setUser(null);
-      }
-    } catch {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
+    let isMounted = true;
+    getMeApi()
+      .then((response) => {
+        if (isMounted) {
+          if (response.success && response.data) {
+            setUser(response.data);
+          } else {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            setUser(null);
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  // Đăng nhập
+  // Sign in
   const login = async (data: LoginRequest) => {
     setIsLoading(true);
     try {
@@ -57,14 +55,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('refreshToken', res.data.refreshToken);
         setUser(res.data.user);
       } else {
-        throw new Error(res.message || 'Đăng nhập thất bại');
+        throw new Error(res.message || 'Sign in failed');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Đăng ký
+  // Register
   const register = async (data: RegisterRequest) => {
     setIsLoading(true);
     try {
@@ -74,14 +72,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('refreshToken', res.data.refreshToken);
         setUser(res.data.user);
       } else {
-        throw new Error(res.message || 'Đăng ký thất bại');
+        throw new Error(res.message || 'Registration failed');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Đăng xuất
+  // Sign out
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -98,12 +96,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };
