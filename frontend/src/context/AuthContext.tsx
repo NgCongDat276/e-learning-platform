@@ -45,6 +45,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Refresh current user data
+  const refreshUser = async () => {
+    try {
+      const response = await getMeApi();
+      if (response.success && response.data) {
+        setUser(response.data);
+      }
+    } catch {
+      // keep current state if refresh fails
+    }
+  };
+
   // Sign in
   const login = async (data: LoginRequest) => {
     setIsLoading(true);
@@ -93,6 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
+    setUser,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

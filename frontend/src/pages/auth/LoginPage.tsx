@@ -141,16 +141,16 @@ export const LoginPage: React.FC = () => {
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             marginBottom: 24,
           }}
         >
-          <Form.Item name="remember" valuePropName="checked" noStyle>
+          {/* <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox style={{ fontSize: 13, color: token.colorTextSecondary }}>
               Remember me
             </Checkbox>
-          </Form.Item>
+          </Form.Item> */}
 
           <Link
             to="/forgot-password"
