@@ -25,7 +25,13 @@ export const validate = (schema: RequestValidationSchema) => {
       }
 
       if (schema.query) {
-        req.query = (await schema.query.parseAsync(req.query)) as any;
+        const parsedQuery = await schema.query.parseAsync(req.query);
+        Object.defineProperty(req, "query", {
+          value: parsedQuery,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
       }
 
       if (schema.params) {

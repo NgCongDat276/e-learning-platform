@@ -3,7 +3,8 @@ import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import prisma from "./prisma";
-
+import authRoutes from "./modules/auth/auth.routes";
+import usersRoutes from "./modules/users/users.routes";
 // Import các tiện ích và middleware từ common
 import { NotFoundError } from "./common/errors/app-error";
 import { errorHandler } from "./common/middlewares/error-handler";
@@ -58,6 +59,9 @@ app.get("/health", async (req: Request, res: Response) => {
 });
 
 // ⚠️ XỬ LÝ ROUTE KHÔNG TỒN TẠI (404 NOT FOUND) (đặt sau tất cả route khác)
+
+app.use("/auth", authRoutes);
+app.use("/users", usersRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(
