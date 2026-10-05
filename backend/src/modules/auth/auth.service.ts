@@ -42,7 +42,8 @@ export class AuthService {
           email: data.email,
           password_hash: hashedPassword,
           full_name: data.full_name,
-          role: data.role || user_role.student,
+          // Người đăng ký làm giảng viên sẽ có vai trò ban đầu là student cho đến khi Admin phê duyệt
+          role: user_role.student,
           is_active: true,
         },
         select: {
