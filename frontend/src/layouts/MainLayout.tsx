@@ -92,13 +92,15 @@ export const MainLayout: React.FC = () => {
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
           },
         ]
-      : [
+      : !isAdmin
+      ? [
           {
             key: 'courses',
             icon: <DashboardOutlined />,
             label: <Link to="/courses">My Courses</Link>,
           },
-        ]),
+        ]
+      : []),
     { type: 'divider' },
     {
       key: 'logout',
@@ -186,7 +188,7 @@ export const MainLayout: React.FC = () => {
             style={{
               borderBottom: 'none',
               backgroundColor: 'transparent',
-              minWidth: 320,
+              minWidth: 380,
             }}
           />
         </Space>

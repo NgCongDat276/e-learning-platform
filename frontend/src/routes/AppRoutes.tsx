@@ -7,6 +7,7 @@ import { RegisterPage } from '../pages/auth/RegisterPage';
 import { HomePage } from '../pages/home/HomePage';
 import { ProfilePage } from '../pages/user/ProfilePage';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
+import { TeacherCoursesPage } from '../pages/teacher/TeacherCoursesPage';
 import { NotFoundPage } from '../pages/error/NotFoundPage';
 import { ProtectedRoute } from '../components/guards/ProtectedRoute';
 import { GuestRoute } from '../components/guards/GuestRoute';
@@ -29,6 +30,13 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+      </Route>
+
+      {/* Protected Teacher / Lecturer Routes */}
+      <Route element={<ProtectedRoute allowedRoles={['lecturer', 'admin']} />}>
+        <Route element={<MainLayout />}>
+          <Route path="/teacher/courses" element={<TeacherCoursesPage />} />
         </Route>
       </Route>
 

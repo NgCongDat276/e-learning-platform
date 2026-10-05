@@ -26,3 +26,30 @@ export const authenticate = (
 
   next();
 };
+
+/**
+ * Middleware xác thực tùy chọn: Nếu có token thì giải mã và gắn vào req.user,
+ * nếu không có token hoặc token không hợp lệ thì bỏ qua (không throw lỗi 401).
+ * Dùng cho các route công khai nhưng cho phép tác giả/admin xem trước nội dung nháp.
+ */
+export const optionalAuthenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    if (token) {
+      try {
+        const decodedUser = verifyAccessToken(token);
+        req.user = decodedUser;
+      } catch {
+        // Bỏ qua lỗi token, coi như khách vãng lai
+      }
+    }
+  }
+
+  next();
+};
