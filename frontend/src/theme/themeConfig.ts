@@ -8,7 +8,8 @@ export const lmsThemeConfig: ThemeConfig = {
   token: {
     // 1. Brand Palette
     colorPrimary: "#a3e635", // Lime Sprint (Primary Action)
-    colorTextLightSolid: "#262626", // CRITICAL: Ink text on Lime background
+    colorTextLightSolid: "#ffffff", // Crisp white text on dark solid elements (Tooltips, solid badges, etc.)
+    colorBgSpotlight: "#262626", // Ink background for Tooltips
     colorBgLayout: "#fcfff7", // Cream (Page canvas)
     colorBgContainer: "#ffffff", // Paper White (Cards, modals)
     colorText: "#262626", // Ink (Primary text)
@@ -32,6 +33,7 @@ export const lmsThemeConfig: ThemeConfig = {
     Button: {
       borderRadius: 4,
       fontWeight: 500,
+      primaryColor: "#262626", // CRITICAL: Ink text on Lime background for primary button
       primaryShadow: "2px 2px 0px 0px #262626", // Hard offset shadow for primary CTA
     },
     Input: {
