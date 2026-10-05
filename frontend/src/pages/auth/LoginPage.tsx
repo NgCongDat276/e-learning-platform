@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Checkbox, Card, Typography, Alert, App, theme } from 'antd';
+import { Form, Input, Button, Card, Typography, Alert, App, theme } from 'antd';
 import { MailOutlined, LockOutlined, ArrowRightOutlined, LoginOutlined } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import { useAuth } from '../../context/useAuth';

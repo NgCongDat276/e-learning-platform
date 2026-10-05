@@ -25,6 +25,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   DashboardOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../context/useAuth';
 
@@ -39,6 +40,9 @@ export const HomePage: React.FC = () => {
     logout();
     navigate('/');
   };
+
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
+  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
 
   const userMenuItems: MenuProps['items'] = [
     {
@@ -61,15 +65,30 @@ export const HomePage: React.FC = () => {
       icon: <UserOutlined />,
       label: <Link to="/profile">My Profile</Link>,
     },
-    {
-      key: 'courses',
-      icon: <DashboardOutlined />,
-      label: (
-        <Link to={user?.role === 'lecturer' ? '/teacher/courses' : '/courses'}>
-          {user?.role === 'lecturer' ? 'Teaching Workspace' : 'My Courses'}
-        </Link>
-      ),
-    },
+    ...(isAdmin
+      ? [
+          {
+            key: 'admin-users',
+            icon: <TeamOutlined />,
+            label: <Link to="/admin/users">User Management</Link>,
+          },
+        ]
+      : []),
+    ...(isLecturer
+      ? [
+          {
+            key: 'teacher-courses',
+            icon: <DashboardOutlined />,
+            label: <Link to="/teacher/courses">Teaching Workspace</Link>,
+          },
+        ]
+      : [
+          {
+            key: 'courses',
+            icon: <DashboardOutlined />,
+            label: <Link to="/courses">My Courses</Link>,
+          },
+        ]),
     { type: 'divider' },
     {
       key: 'logout',
@@ -127,11 +146,24 @@ export const HomePage: React.FC = () => {
             <Tag
               style={{
                 textTransform: 'uppercase',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: 11,
                 borderRadius: 9999,
-                backgroundColor: token.colorBgLayout,
-                borderColor: token.colorBorder,
+                backgroundColor: isAdmin
+                  ? '#fef08a'
+                  : isLecturer
+                  ? '#e0e7ff'
+                  : token.colorBgLayout,
+                borderColor: isAdmin
+                  ? '#ca8a04'
+                  : isLecturer
+                  ? '#a5b4fc'
+                  : token.colorBorder,
+                color: isAdmin
+                  ? '#713f12'
+                  : isLecturer
+                  ? '#3730a3'
+                  : token.colorText,
               }}
             >
               {user.role}
