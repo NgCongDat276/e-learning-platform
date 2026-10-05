@@ -6,6 +6,7 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { HomePage } from '../pages/home/HomePage';
 import { ProfilePage } from '../pages/user/ProfilePage';
+import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { NotFoundPage } from '../pages/error/NotFoundPage';
 import { ProtectedRoute } from '../components/guards/ProtectedRoute';
 import { GuestRoute } from '../components/guards/GuestRoute';
@@ -24,10 +25,17 @@ export const AppRoutes: React.FC = () => {
         </Route>
       </Route>
 
-      {/* Protected Internal Routes wrapped in MainLayout */}
+      {/* Protected User Routes wrapped in MainLayout */}
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+      </Route>
+
+      {/* Protected Admin Routes */}
+      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+        <Route element={<MainLayout />}>
+          <Route path="/admin/users" element={<UserManagementPage />} />
         </Route>
       </Route>
 

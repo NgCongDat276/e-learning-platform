@@ -26,6 +26,9 @@ export const MainLayout: React.FC = () => {
     navigate('/login');
   };
 
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
+  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'user-header',
@@ -38,6 +41,31 @@ export const MainLayout: React.FC = () => {
           <Text type="secondary" style={{ fontSize: 12 }}>
             {user?.email}
           </Text>
+          {user?.role && (
+            <div style={{ marginTop: 4 }}>
+              <Tag
+                style={{
+                  borderRadius: 9999,
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  fontWeight: 700,
+                  border: `1px solid ${token.colorBorder}`,
+                  backgroundColor: isAdmin
+                    ? '#fef08a'
+                    : isLecturer
+                    ? '#e0e7ff'
+                    : '#f5f5f5',
+                  color: isAdmin
+                    ? '#713f12'
+                    : isLecturer
+                    ? '#3730a3'
+                    : token.colorTextSecondary,
+                }}
+              >
+                {user.role}
+              </Tag>
+            </div>
+          )}
         </div>
       ),
     },
@@ -47,15 +75,30 @@ export const MainLayout: React.FC = () => {
       icon: <UserOutlined />,
       label: <Link to="/profile">My Profile</Link>,
     },
-    {
-      key: 'courses',
-      icon: <DashboardOutlined />,
-      label: (
-        <Link to={user?.role === 'lecturer' ? '/teacher/courses' : '/courses'}>
-          {user?.role === 'lecturer' ? 'Teaching Workspace' : 'My Courses'}
-        </Link>
-      ),
-    },
+    ...(isAdmin
+      ? [
+          {
+            key: 'admin-users',
+            icon: <TeamOutlined />,
+            label: <Link to="/admin/users">User Management</Link>,
+          },
+        ]
+      : []),
+    ...(isLecturer
+      ? [
+          {
+            key: 'teacher-courses',
+            icon: <DashboardOutlined />,
+            label: <Link to="/teacher/courses">Teaching Workspace</Link>,
+          },
+        ]
+      : [
+          {
+            key: 'courses',
+            icon: <DashboardOutlined />,
+            label: <Link to="/courses">My Courses</Link>,
+          },
+        ]),
     { type: 'divider' },
     {
       key: 'logout',
@@ -77,7 +120,7 @@ export const MainLayout: React.FC = () => {
       icon: <BookOutlined />,
       label: <Link to="/courses">Courses</Link>,
     },
-    ...(user?.role === 'lecturer'
+    ...(isLecturer
       ? [
           {
             key: '/teacher/courses',
@@ -86,7 +129,7 @@ export const MainLayout: React.FC = () => {
           },
         ]
       : []),
-    ...(user?.role === 'admin'
+    ...(isAdmin
       ? [
           {
             key: '/admin/users',

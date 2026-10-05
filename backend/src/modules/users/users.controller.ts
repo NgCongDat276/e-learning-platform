@@ -12,7 +12,10 @@ export class UsersController {
 
   // [PUT] /users/profile - Cập nhật thông tin cá nhân
   async updateProfile(req: Request, res: Response): Promise<Response> {
-    const updatedUser = await usersService.updateProfile(req.user!.id, req.body);
+    const updatedUser = await usersService.updateProfile(
+      req.user!.id,
+      req.body,
+    );
     return sendSuccess(res, updatedUser, "Profile updated successfully");
   }
 
@@ -46,7 +49,9 @@ export class UsersController {
     return sendSuccess(
       res,
       updated,
-      is_active ? "User activated successfully" : "User deactivated successfully",
+      is_active
+        ? "User activated successfully"
+        : "User deactivated successfully",
     );
   }
 }
