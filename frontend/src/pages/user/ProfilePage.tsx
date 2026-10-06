@@ -69,6 +69,11 @@ export const ProfilePage: React.FC = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
+  // Always fetch latest profile data on mount to ensure lecturer status & credentials are in sync
+  useEffect(() => {
+    refreshUser();
+  }, []);
+
   // Sync form initial values when user changes
   useEffect(() => {
     if (user) {

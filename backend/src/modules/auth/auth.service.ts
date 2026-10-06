@@ -91,8 +91,11 @@ export class AuthService {
 
     const refreshToken = generateRefreshToken({ id: newUser.id });
 
+    // 1.5 Lấy thông tin user đầy đủ (bao gồm teacher_profile và lecturer_request)
+    const fullUser = await this.getCurrentUser(newUser.id);
+
     return {
-      user: newUser,
+      user: fullUser,
       accessToken,
       refreshToken,
     };
@@ -137,11 +140,11 @@ export class AuthService {
 
     const refreshToken = generateRefreshToken({ id: user.id });
 
-    // 2.5 Loại bỏ password_hash trước khi trả về
-    const { password_hash, ...sanitizedUser } = user;
+    // 2.5 Lấy thông tin user đầy đủ (bao gồm teacher_profile và lecturer_request)
+    const fullUser = await this.getCurrentUser(user.id);
 
     return {
-      user: sanitizedUser,
+      user: fullUser,
       accessToken,
       refreshToken,
     };
