@@ -41,6 +41,15 @@ export class UsersService {
             updated_at: true,
           },
         },
+        lecturer_requests_lecturer_requests_user_idTousers: {
+          select: {
+            id: true,
+            status: true,
+            note: true,
+            reviewed_at: true,
+            created_at: true,
+          },
+        },
       },
     });
 
@@ -48,7 +57,14 @@ export class UsersService {
       throw new NotFoundError("User not found");
     }
 
-    return user;
+    const { lecturer_requests_lecturer_requests_user_idTousers, ...restUser } =
+      user;
+
+    return {
+      ...restUser,
+      lecturer_request:
+        lecturer_requests_lecturer_requests_user_idTousers || null,
+    };
   }
 
   /**

@@ -199,6 +199,15 @@ export class AuthService {
             cv_url: true,
           },
         },
+        lecturer_requests_lecturer_requests_user_idTousers: {
+          select: {
+            id: true,
+            status: true,
+            note: true,
+            reviewed_at: true,
+            created_at: true,
+          },
+        },
       },
     });
 
@@ -206,7 +215,14 @@ export class AuthService {
       throw new NotFoundError("Không tìm thấy thông tin người dùng");
     }
 
-    return user;
+    const { lecturer_requests_lecturer_requests_user_idTousers, ...restUser } =
+      user;
+
+    return {
+      ...restUser,
+      lecturer_request:
+        lecturer_requests_lecturer_requests_user_idTousers || null,
+    };
   }
 }
 

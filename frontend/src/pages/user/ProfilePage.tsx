@@ -26,6 +26,7 @@ import {
   IdcardOutlined,
   SafetyCertificateOutlined,
   LinkOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import { useAuth } from '../../context/useAuth';
@@ -202,6 +203,33 @@ export const ProfilePage: React.FC = () => {
                 >
                   {user?.role}
                 </Tag>
+                {user?.lecturer_request?.status === 'pending' && (
+                  <Tag
+                    icon={<ClockCircleOutlined />}
+                    style={{
+                      borderRadius: 9999,
+                      backgroundColor: '#fef3c7',
+                      color: '#b45309',
+                      border: '1px solid #fcd34d',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Lecturer Applicant (Pending)
+                  </Tag>
+                )}
+                {user?.lecturer_request?.status === 'rejected' && (
+                  <Tag
+                    style={{
+                      borderRadius: 9999,
+                      backgroundColor: '#fee2e2',
+                      color: '#ef4444',
+                      border: '1px solid #fca5a5',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Application Declined
+                  </Tag>
+                )}
               </Space>
               <Text type="secondary" style={{ display: 'block', fontSize: 13, marginTop: 4 }}>
                 <MailOutlined style={{ marginRight: 6 }} />
@@ -249,6 +277,61 @@ export const ProfilePage: React.FC = () => {
                       style={{ marginBottom: 20 }}
                     />
                   )}
+
+                {/* Lecturer Application Status Alerts */}
+                {user?.lecturer_request?.status === 'pending' && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    icon={<ClockCircleOutlined />}
+                    message="Lecturer Application Pending Review"
+                    description="Your application to become a lecturer is currently under review by our administrator. You can review and update your qualifications below while waiting."
+                    style={{
+                      marginBottom: 20,
+                      borderRadius: 6,
+                      border: '1px solid #fcd34d',
+                      backgroundColor: '#fffbeb',
+                    }}
+                  />
+                )}
+
+                {user?.lecturer_request?.status === 'rejected' && (
+                  <Alert
+                    type="error"
+                    showIcon
+                    message="Lecturer Application Declined"
+                    description={
+                      <div>
+                        <div>
+                          Your application to become an instructor was reviewed and not approved at this time.
+                        </div>
+                        {user.lecturer_request.note && (
+                          <div style={{ marginTop: 6, fontWeight: 500 }}>
+                            Admin Note: "{user.lecturer_request.note}"
+                          </div>
+                        )}
+                      </div>
+                    }
+                    style={{
+                      marginBottom: 20,
+                      borderRadius: 6,
+                      border: '1px solid #fca5a5',
+                      backgroundColor: '#fef2f2',
+                    }}
+                  />
+                )}
+
+                {/* Fallback for candidates whose request record might not have status synced yet */}
+                {!user?.lecturer_request && user?.role !== 'lecturer' && !!user?.teacher_profile && (
+                  <Alert
+                    type="info"
+                    showIcon
+                    icon={<ClockCircleOutlined />}
+                    message="Lecturer Application Pending Review"
+                    description="Your application to become a lecturer is currently awaiting review by the administrator. You can review and update your credentials below."
+                    style={{ marginBottom: 20, borderRadius: 6 }}
+                  />
+                )}
 
                   <Form
                     form={profileForm}
@@ -299,8 +382,8 @@ export const ProfilePage: React.FC = () => {
                       />
                     </Form.Item>
 
-                    {/* Teacher profile section if role is lecturer */}
-                    {user?.role === 'lecturer' && (
+                    {/* Teacher profile section if role is lecturer or has teacher profile */}
+                    {(user?.role === 'lecturer' || !!user?.teacher_profile) && (
                       <>
                         <Divider titlePlacement="left" style={{ margin: '24px 0 20px 0' }}>
                           <Text strong style={{ fontSize: 14 }}>

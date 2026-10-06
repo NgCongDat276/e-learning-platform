@@ -10,6 +10,14 @@ export interface TeacherProfile {
   cv_url?: string | null;
 }
 
+export interface UserLecturerRequest {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  note?: string | null;
+  reviewed_at?: string | null;
+  created_at?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -19,6 +27,7 @@ export interface User {
   is_active?: boolean;
   created_at?: string;
   teacher_profile?: TeacherProfile | null;
+  lecturer_request?: UserLecturerRequest | null;
 }
 
 export interface LoginRequest {
