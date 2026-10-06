@@ -22,6 +22,9 @@ const router = Router();
 // 1. PUBLIC ROUTES (Học viên & Khách)
 // ==========================================
 
+// [GET] /courses/public-metrics - Thống kê công khai nền tảng cho trang chủ
+router.get("/public-metrics", coursesController.getPublicMetrics);
+
 // [GET] /courses - Danh sách khóa học công khai (Phân trang, lọc, tìm kiếm)
 router.get(
   "/",

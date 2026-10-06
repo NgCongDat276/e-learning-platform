@@ -82,7 +82,7 @@ export const UserManagementPage: React.FC = () => {
               color: token.colorTextSecondary,
             }}
           >
-            Admin Console • User Governance
+            Admin Console • User Management
           </Text>
         </Space>
         <Title
