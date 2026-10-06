@@ -50,4 +50,11 @@ router.patch(
   usersController.updateUserStatus,
 );
 
+// 6. Nộp lại đơn đăng ký giảng viên (Protected: Student)
+router.post(
+  "/reapply-lecturer",
+  authenticate,
+  usersController.reapplyLecturer,
+);
+
 export default router;

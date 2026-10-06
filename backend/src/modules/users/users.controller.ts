@@ -54,6 +54,15 @@ export class UsersController {
         : "User deactivated successfully",
     );
   }
+  // [POST] /users/reapply-lecturer - Nộp lại đơn đăng ký giảng viên
+  async reapplyLecturer(req: Request, res: Response): Promise<Response> {
+    const result = await usersService.reapplyLecturer(req.user!.id);
+    return sendSuccess(
+      res,
+      result,
+      "Application resubmitted successfully. Your request is now pending review.",
+    );
+  }
 }
 
 export const usersController = new UsersController();

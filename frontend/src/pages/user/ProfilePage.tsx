@@ -16,6 +16,7 @@ import {
   App,
   theme,
   Divider,
+  Popconfirm,
 } from 'antd';
 import {
   UserOutlined,
@@ -27,10 +28,11 @@ import {
   SafetyCertificateOutlined,
   LinkOutlined,
   ClockCircleOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import { useAuth } from '../../context/useAuth';
-import { updateProfileApi, changePasswordApi } from '../../api/user.api';
+import { updateProfileApi, changePasswordApi, reapplyLecturerApi } from '../../api/user.api';
 import type { ApiResponse } from '../../types/api';
 import type { UpdateProfileRequest, ChangePasswordRequest } from '../../types/user.types';
 
@@ -55,7 +57,7 @@ interface ChangePasswordFormValues {
 
 export const ProfilePage: React.FC = () => {
   const { token } = theme.useToken();
-  const { user, setUser } = useAuth();
+  const { user, setUser, refreshUser } = useAuth();
   const { message } = App.useApp();
 
   const [profileForm] = Form.useForm<ProfileFormValues>();
@@ -63,6 +65,7 @@ export const ProfilePage: React.FC = () => {
 
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [reapplying, setReapplying] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -91,7 +94,7 @@ export const ProfilePage: React.FC = () => {
       avatar_url: values.avatar_url?.trim() || null,
     };
 
-    if (user?.role === 'lecturer') {
+    if (user?.role === 'lecturer' || !!user?.teacher_profile || !!user?.lecturer_request) {
       payload.degree = values.degree || null;
       payload.expertise = values.expertise?.trim() || null;
       payload.cv_url = values.cv_url?.trim() || null;
@@ -144,6 +147,28 @@ export const ProfilePage: React.FC = () => {
       setPasswordError(msg);
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  // Handle Lecturer Re-application
+  const handleReapply = async () => {
+    setReapplying(true);
+    try {
+      const response = await reapplyLecturerApi();
+      if (response.success) {
+        message.success('Your application has been resubmitted for review!');
+        await refreshUser();
+      }
+    } catch (error: unknown) {
+      let msg = 'Failed to resubmit application. Please try again.';
+      if (isAxiosError<ApiResponse>(error)) {
+        msg = error.response?.data?.message || error.message || msg;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
+      message.error(msg);
+    } finally {
+      setReapplying(false);
     }
   };
 
@@ -301,15 +326,71 @@ export const ProfilePage: React.FC = () => {
                     showIcon
                     message="Lecturer Application Declined"
                     description={
-                      <div>
+                      <div style={{ marginTop: 4 }}>
                         <div>
                           Your application to become an instructor was reviewed and not approved at this time.
                         </div>
                         {user.lecturer_request.note && (
-                          <div style={{ marginTop: 6, fontWeight: 500 }}>
-                            Admin Note: "{user.lecturer_request.note}"
+                          <div
+                            style={{
+                              marginTop: 8,
+                              padding: '8px 12px',
+                              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                              borderRadius: 4,
+                              borderLeft: '3px solid #ef4444',
+                              color: '#991b1b',
+                              fontSize: 13,
+                              fontWeight: 500,
+                            }}
+                          >
+                            <strong>Admin Feedback:</strong> {user.lecturer_request.note}
                           </div>
                         )}
+                        <div
+                          style={{
+                            marginTop: 14,
+                            paddingTop: 12,
+                            borderTop: '1px dashed #fca5a5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                          }}
+                        >
+                          <Text type="secondary" style={{ fontSize: 13 }}>
+                            Please update your qualifications and CV below, then submit a new application.
+                          </Text>
+                          <Popconfirm
+                            title="Resubmit Lecturer Application"
+                            description="Have you updated your credentials and CV below? Click confirm to submit your application for review."
+                            onConfirm={handleReapply}
+                            okText="Yes, Re-apply"
+                            cancelText="Cancel"
+                            okButtonProps={{
+                              style: {
+                                backgroundColor: '#262626',
+                                borderColor: '#262626',
+                                color: '#ffffff',
+                              },
+                            }}
+                          >
+                            <Button
+                              type="primary"
+                              loading={reapplying}
+                              icon={<ReloadOutlined />}
+                              style={{
+                                backgroundColor: '#262626',
+                                borderColor: '#262626',
+                                color: '#fcfff7',
+                                fontWeight: 600,
+                                boxShadow: '2px 2px 0 0 #262626',
+                              }}
+                            >
+                              Re-apply for Lecturer
+                            </Button>
+                          </Popconfirm>
+                        </div>
                       </div>
                     }
                     style={{
@@ -382,8 +463,8 @@ export const ProfilePage: React.FC = () => {
                       />
                     </Form.Item>
 
-                    {/* Teacher profile section if role is lecturer or has teacher profile */}
-                    {(user?.role === 'lecturer' || !!user?.teacher_profile) && (
+                    {/* Teacher profile section if role is lecturer or candidate */}
+                    {(user?.role === 'lecturer' || !!user?.teacher_profile || !!user?.lecturer_request) && (
                       <>
                         <Divider titlePlacement="left" style={{ margin: '24px 0 20px 0' }}>
                           <Text strong style={{ fontSize: 14 }}>
