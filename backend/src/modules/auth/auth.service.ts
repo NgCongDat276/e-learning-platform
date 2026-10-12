@@ -42,7 +42,8 @@ export class AuthService {
           email: data.email,
           password_hash: hashedPassword,
           full_name: data.full_name,
-          role: data.role || user_role.student,
+          // Người đăng ký làm giảng viên sẽ có vai trò ban đầu là student cho đến khi Admin phê duyệt
+          role: user_role.student,
           is_active: true,
         },
         select: {
@@ -90,8 +91,11 @@ export class AuthService {
 
     const refreshToken = generateRefreshToken({ id: newUser.id });
 
+    // 1.5 Lấy thông tin user đầy đủ (bao gồm teacher_profile và lecturer_request)
+    const fullUser = await this.getCurrentUser(newUser.id);
+
     return {
-      user: newUser,
+      user: fullUser,
       accessToken,
       refreshToken,
     };
@@ -136,11 +140,11 @@ export class AuthService {
 
     const refreshToken = generateRefreshToken({ id: user.id });
 
-    // 2.5 Loại bỏ password_hash trước khi trả về
-    const { password_hash, ...sanitizedUser } = user;
+    // 2.5 Lấy thông tin user đầy đủ (bao gồm teacher_profile và lecturer_request)
+    const fullUser = await this.getCurrentUser(user.id);
 
     return {
-      user: sanitizedUser,
+      user: fullUser,
       accessToken,
       refreshToken,
     };
@@ -198,6 +202,15 @@ export class AuthService {
             cv_url: true,
           },
         },
+        lecturer_requests_lecturer_requests_user_idTousers: {
+          select: {
+            id: true,
+            status: true,
+            note: true,
+            reviewed_at: true,
+            created_at: true,
+          },
+        },
       },
     });
 
@@ -205,7 +218,14 @@ export class AuthService {
       throw new NotFoundError("Không tìm thấy thông tin người dùng");
     }
 
-    return user;
+    const { lecturer_requests_lecturer_requests_user_idTousers, ...restUser } =
+      user;
+
+    return {
+      ...restUser,
+      lecturer_request:
+        lecturer_requests_lecturer_requests_user_idTousers || null,
+    };
   }
 }
 

@@ -64,3 +64,14 @@ export const updateUserStatusApi = async (
   })) as unknown as ApiResponse<User>;
   return response;
 };
+
+/**
+ * 6. Nộp lại đơn đăng ký giảng viên sau khi bị từ chối (Protected: Student)
+ */
+export const reapplyLecturerApi = async (): Promise<ApiResponse<null>> => {
+  const response = (await axiosClient.post(
+    '/users/reapply-lecturer'
+  )) as unknown as ApiResponse<null>;
+  return response;
+};
+

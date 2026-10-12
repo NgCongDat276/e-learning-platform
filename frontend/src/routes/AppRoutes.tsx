@@ -8,6 +8,8 @@ import { HomePage } from '../pages/home/HomePage';
 import { ProfilePage } from '../pages/user/ProfilePage';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { TeacherCoursesPage } from '../pages/teacher/TeacherCoursesPage';
+import { CourseCatalogPage } from '../pages/course/CourseCatalogPage';
+import { CourseDetailPage } from '../pages/course/CourseDetailPage';
 import { NotFoundPage } from '../pages/error/NotFoundPage';
 import { ProtectedRoute } from '../components/guards/ProtectedRoute';
 import { GuestRoute } from '../components/guards/GuestRoute';
@@ -17,6 +19,12 @@ export const AppRoutes: React.FC = () => {
     <Routes>
       {/* Public Home Page */}
       <Route path="/" element={<HomePage />} />
+
+      {/* Public Course Catalog & Details wrapped in MainLayout */}
+      <Route element={<MainLayout />}>
+        <Route path="/courses" element={<CourseCatalogPage />} />
+        <Route path="/courses/:slug" element={<CourseDetailPage />} />
+      </Route>
 
       {/* Guest-only Auth Routes */}
       <Route element={<GuestRoute />}>

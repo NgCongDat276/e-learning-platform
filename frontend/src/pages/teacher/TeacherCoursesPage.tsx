@@ -132,7 +132,17 @@ export const TeacherCoursesPage: React.FC = () => {
   );
 
   useEffect(() => {
-    fetchCourses(1, pagination.limit, searchKeyword, levelFilter, statusFilter);
+    let ignore = false;
+    const load = async () => {
+      await Promise.resolve();
+      if (!ignore) {
+        fetchCourses(1, pagination.limit, searchKeyword, levelFilter, statusFilter);
+      }
+    };
+    void load();
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelFilter, statusFilter]);
 

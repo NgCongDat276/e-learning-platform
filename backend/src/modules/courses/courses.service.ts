@@ -37,6 +37,26 @@ export class CoursesService {
   }
 
   /**
+   * 0. Lấy thống kê công khai nền tảng cho trang chủ (Public Landing Metrics)
+   */
+  async getPublicMetrics() {
+    const [publishedCourses, totalUsers, totalLessons, approvedLecturers] =
+      await Promise.all([
+        prisma.courses.count({ where: { status: course_status.published } }),
+        prisma.users.count({ where: { is_active: true } }),
+        prisma.lessons.count(),
+        prisma.users.count({ where: { role: user_role.lecturer } }),
+      ]);
+
+    return {
+      publishedCourses,
+      totalUsers,
+      totalLessons,
+      approvedLecturers,
+    };
+  }
+
+  /**
    * 1. Tạo khóa học mới (Giảng viên / Admin)
    */
   async createCourse(lecturerId: string, data: CreateCourseInput) {

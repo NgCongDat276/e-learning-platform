@@ -6,6 +6,12 @@ import { user_role } from "@prisma/client";
 import type { QueryCoursesInput } from "./courses.schema";
 
 export class CoursesController {
+  // [GET] /courses/public-metrics - Thống kê công khai của hệ thống
+  async getPublicMetrics(req: Request, res: Response): Promise<Response> {
+    const result = await coursesService.getPublicMetrics();
+    return sendSuccess(res, result, "Platform metrics fetched successfully");
+  }
+
   // [POST] /courses - Tạo khóa học mới (Giảng viên / Admin)
   async createCourse(req: Request, res: Response): Promise<Response> {
     const course = await coursesService.createCourse(req.user!.id, req.body);

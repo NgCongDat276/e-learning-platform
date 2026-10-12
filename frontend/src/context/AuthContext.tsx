@@ -59,35 +59,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sign in
   const login = async (data: LoginRequest) => {
-    setIsLoading(true);
-    try {
-      const res = await loginApi(data);
-      if (res.success && res.data) {
-        localStorage.setItem('accessToken', res.data.accessToken);
-        localStorage.setItem('refreshToken', res.data.refreshToken);
-        setUser(res.data.user);
-      } else {
-        throw new Error(res.message || 'Sign in failed');
-      }
-    } finally {
-      setIsLoading(false);
+    const res = await loginApi(data);
+    if (res.success && res.data) {
+      localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
+      setUser(res.data.user);
+    } else {
+      throw new Error(res.message || 'Sign in failed');
     }
   };
 
   // Register
   const register = async (data: RegisterRequest) => {
-    setIsLoading(true);
-    try {
-      const res = await registerApi(data);
-      if (res.success && res.data) {
-        localStorage.setItem('accessToken', res.data.accessToken);
-        localStorage.setItem('refreshToken', res.data.refreshToken);
-        setUser(res.data.user);
-      } else {
-        throw new Error(res.message || 'Registration failed');
-      }
-    } finally {
-      setIsLoading(false);
+    const res = await registerApi(data);
+    if (res.success && res.data) {
+      localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
+      setUser(res.data.user);
+    } else {
+      throw new Error(res.message || 'Registration failed');
     }
   };
 

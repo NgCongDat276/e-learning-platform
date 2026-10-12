@@ -41,6 +41,15 @@ export class UsersService {
             updated_at: true,
           },
         },
+        lecturer_requests_lecturer_requests_user_idTousers: {
+          select: {
+            id: true,
+            status: true,
+            note: true,
+            reviewed_at: true,
+            created_at: true,
+          },
+        },
       },
     });
 
@@ -48,7 +57,14 @@ export class UsersService {
       throw new NotFoundError("User not found");
     }
 
-    return user;
+    const { lecturer_requests_lecturer_requests_user_idTousers, ...restUser } =
+      user;
+
+    return {
+      ...restUser,
+      lecturer_request:
+        lecturer_requests_lecturer_requests_user_idTousers || null,
+    };
   }
 
   /**
@@ -132,13 +148,35 @@ export class UsersService {
               bio: true,
               certificates: true,
               cv_url: true,
+              created_at: true,
+              updated_at: true,
+            },
+          },
+          lecturer_requests_lecturer_requests_user_idTousers: {
+            select: {
+              id: true,
+              status: true,
+              note: true,
+              reviewed_at: true,
+              created_at: true,
             },
           },
         },
       });
     });
 
-    return updatedUser;
+    if (!updatedUser) {
+      throw new NotFoundError("User not found");
+    }
+
+    const { lecturer_requests_lecturer_requests_user_idTousers, ...restUser } =
+      updatedUser;
+
+    return {
+      ...restUser,
+      lecturer_request:
+        lecturer_requests_lecturer_requests_user_idTousers || null,
+    };
   }
 
   /**
@@ -268,6 +306,65 @@ export class UsersService {
     });
 
     return updatedUser;
+  }
+
+  /**
+   * 6. Nộp lại đơn đăng ký giảng viên sau khi bị từ chối (Re-apply)
+   */
+  async reapplyLecturer(userId: string) {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        lecturer_requests_lecturer_requests_user_idTousers: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (user.role === user_role.lecturer || user.role === user_role.admin) {
+      throw new BadRequestError(
+        "You already have lecturer or admin privileges.",
+      );
+    }
+
+    const existingRequest =
+      user.lecturer_requests_lecturer_requests_user_idTousers;
+
+    if (existingRequest && existingRequest.status === "pending") {
+      throw new BadRequestError("Your application is already pending review.");
+    }
+
+    if (existingRequest && existingRequest.status === "approved") {
+      throw new BadRequestError("Your application has already been approved.");
+    }
+
+    let updatedRequest;
+    if (existingRequest) {
+      updatedRequest = await prisma.lecturer_requests.update({
+        where: { id: existingRequest.id },
+        data: {
+          status: "pending",
+          reviewed_by: null,
+          reviewed_at: null,
+          note: "Hồ sơ đã được ứng viên cập nhật và nộp lại",
+          updated_at: new Date(),
+        },
+      });
+    } else {
+      updatedRequest = await prisma.lecturer_requests.create({
+        data: {
+          user_id: userId,
+          status: "pending",
+          note: "Đăng ký giảng viên nộp từ trang hồ sơ",
+        },
+      });
+    }
+
+    return updatedRequest;
   }
 }
 
