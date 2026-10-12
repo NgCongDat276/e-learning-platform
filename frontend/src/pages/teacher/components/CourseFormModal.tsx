@@ -59,7 +59,11 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
   const { message } = App.useApp();
   const [form] = Form.useForm<CourseFormValues>();
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const watchedThumbnail = Form.useWatch('thumbnail_url', form);
+  const thumbnailPreview =
+    watchedThumbnail !== undefined
+      ? watchedThumbnail
+      : courseToEdit?.thumbnail_url || '';
 
   const isEditing = !!courseToEdit;
 
@@ -74,10 +78,8 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
           thumbnail_url: courseToEdit.thumbnail_url || '',
           description: courseToEdit.description || '',
         });
-        setThumbnailPreview(courseToEdit.thumbnail_url || '');
       } else {
         form.resetFields();
-        setThumbnailPreview('');
       }
     }
   }, [open, courseToEdit, form]);
@@ -246,7 +248,6 @@ export const CourseFormModal: React.FC<CourseFormModalProps> = ({
           <Input
             prefix={<LinkOutlined style={{ color: token.colorTextSecondary }} />}
             placeholder="https://example.com/course-cover.jpg"
-            onChange={(e) => setThumbnailPreview(e.target.value.trim())}
             style={{ borderRadius: 4 }}
             allowClear
           />

@@ -29,7 +29,17 @@ export const UserManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchPendingCount();
+    let ignore = false;
+    const run = async () => {
+      await Promise.resolve();
+      if (!ignore) {
+        fetchPendingCount();
+      }
+    };
+    void run();
+    return () => {
+      ignore = true;
+    };
   }, [fetchPendingCount]);
 
   const tabItems = [

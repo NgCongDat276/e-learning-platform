@@ -83,8 +83,8 @@ export const HomeHeader: React.FC = () => {
       : [
           {
             key: 'courses',
-            icon: <DashboardOutlined />,
-            label: <Link to="/courses">My Enrolled Courses</Link>,
+            icon: <BookOutlined />,
+            label: <Link to="/courses">Browse Courses</Link>,
           },
         ]),
     { type: 'divider' },
@@ -163,8 +163,8 @@ export const HomeHeader: React.FC = () => {
           }}
           className="hidden-mobile"
         >
-          <a
-            href="#curricula"
+          <Link
+            to="/courses"
             style={{
               color: token.colorText,
               textDecoration: 'none',
@@ -172,8 +172,8 @@ export const HomeHeader: React.FC = () => {
               fontSize: 14,
             }}
           >
-            Curricula
-          </a>
+            Courses
+          </Link>
           <a
             href="#methodology"
             style={{

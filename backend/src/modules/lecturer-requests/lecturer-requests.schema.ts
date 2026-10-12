@@ -9,7 +9,7 @@ export const queryLecturerRequestsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
   status: z
     .enum(["all", ...Object.values(lecturer_request_status)])
-    .default(lecturer_request_status.pending),
+    .default("all"),
   search: z.string().trim().optional(),
 });
 

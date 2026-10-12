@@ -108,7 +108,17 @@ export const UsersDirectoryTab: React.FC = () => {
   );
 
   useEffect(() => {
-    fetchUsers(1, pagination.limit, searchKeyword, roleFilter);
+    let ignore = false;
+    const run = async () => {
+      await Promise.resolve();
+      if (!ignore) {
+        fetchUsers(1, pagination.limit, searchKeyword, roleFilter);
+      }
+    };
+    void run();
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleFilter]);
 

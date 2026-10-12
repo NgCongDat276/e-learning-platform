@@ -101,6 +101,7 @@ export const RegisterPage: React.FC = () => {
         msg = error.message;
       }
       setErrorMessage(msg);
+      message.error(msg);
     } finally {
       setLoading(false);
     }

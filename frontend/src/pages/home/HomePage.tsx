@@ -21,7 +21,7 @@ export const HomePage: React.FC = () => {
     getCoursesListApi({ limit: 50, status: 'published' })
       .then((res) => {
         if (isMounted && res.success && res.data) {
-          const list = Array.isArray(res.data) ? res.data : (res.data as any).courses || [];
+          const list = Array.isArray(res.data) ? res.data : [];
           setBackendCourses(list);
         }
       })
@@ -50,7 +50,7 @@ export const HomePage: React.FC = () => {
     >
       <HomeHeader />
       <HeroSection />
-      {/* <MetricsRibbon totalCourses={backendCourses.length} totalChapters={totalChapters} /> */}
+      <MetricsRibbon totalCourses={backendCourses.length} totalChapters={totalChapters} />
       <FeaturedCurricula backendCourses={backendCourses} loading={loadingCourses} />
       <MethodologySection />
       <InteractiveDemoSection />

@@ -39,6 +39,7 @@ export const LoginPage: React.FC = () => {
         msg = error.message;
       }
       setErrorMessage(msg);
+      message.error(msg);
     } finally {
       setLoading(false);
     }

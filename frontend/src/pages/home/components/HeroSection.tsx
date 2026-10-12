@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Typography, Space, Tag, theme } from 'antd';
+import { Link } from 'react-router-dom';
 import {
   RocketOutlined,
   SolutionOutlined,
@@ -77,7 +78,7 @@ export const HeroSection: React.FC = () => {
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-        <a href="#curricula">
+        <Link to="/courses">
           <Button
             type="primary"
             size="large"
@@ -92,7 +93,7 @@ export const HeroSection: React.FC = () => {
           >
             Explore Course Catalog
           </Button>
-        </a>
+        </Link>
         <a href="#teach-with-us">
           <Button
             size="large"

@@ -72,6 +72,7 @@ export const ProfilePage: React.FC = () => {
   // Always fetch latest profile data on mount to ensure lecturer status & credentials are in sync
   useEffect(() => {
     refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync form initial values when user changes

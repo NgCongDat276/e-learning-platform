@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Typography, Space, Tag, Dropdown, Avatar, theme, Menu } from 'antd';
+import { Layout, Typography, Space, Tag, Dropdown, Avatar, theme, Menu, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   BookOutlined,
@@ -17,7 +17,7 @@ const { Text } = Typography;
 
 export const MainLayout: React.FC = () => {
   const { token } = theme.useToken();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -193,52 +193,75 @@ export const MainLayout: React.FC = () => {
           />
         </Space>
 
-        {/* User Dropdown */}
-        <Space size="middle" align="center">
-          <Tag
-            style={{
-              textTransform: 'uppercase',
-              fontWeight: 600,
-              fontSize: 11,
-              borderRadius: 9999,
-              backgroundColor: token.colorBgLayout,
-              borderColor: token.colorBorder,
-            }}
-          >
-            {user?.role}
-          </Tag>
-
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-            <div
+        {/* User Dropdown or Guest Auth Buttons */}
+        {isAuthenticated && user ? (
+          <Space size="middle" align="center">
+            <Tag
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                cursor: 'pointer',
-                padding: '4px 10px',
-                borderRadius: token.borderRadius,
-                border: `1px solid ${token.colorBorder}`,
-                backgroundColor: token.colorBgContainer,
-                boxShadow: '1px 1px 0px 0px #262626',
+                textTransform: 'uppercase',
+                fontWeight: 600,
+                fontSize: 11,
+                borderRadius: 9999,
+                backgroundColor: token.colorBgLayout,
+                borderColor: token.colorBorder,
               }}
             >
-              <Avatar
+              {user.role}
+            </Tag>
+
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+              <div
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  padding: '4px 10px',
+                  borderRadius: token.borderRadius,
+                  border: `1px solid ${token.colorBorder}`,
+                  backgroundColor: token.colorBgContainer,
+                  boxShadow: '1px 1px 0px 0px #262626',
+                }}
+              >
+                <Avatar
+                  style={{
+                    backgroundColor: token.colorPrimary,
+                    color: token.colorText,
+                    fontWeight: 700,
+                  }}
+                  src={user.avatar_url || undefined}
+                  size="small"
+                >
+                  {user.full_name?.charAt(0).toUpperCase() || 'U'}
+                </Avatar>
+                <Text strong style={{ fontSize: 13 }}>
+                  {user.full_name}
+                </Text>
+              </div>
+            </Dropdown>
+          </Space>
+        ) : (
+          <Space size="small">
+            <Link to="/login">
+              <Button style={{ fontWeight: 600, borderRadius: 4 }}>Sign In</Button>
+            </Link>
+            <Link to="/register">
+              <Button
+                type="primary"
+                style={{
+                  fontWeight: 600,
                   backgroundColor: token.colorPrimary,
                   color: token.colorText,
-                  fontWeight: 700,
+                  border: `1px solid ${token.colorText}`,
+                  boxShadow: '1px 1px 0px 0px #262626',
+                  borderRadius: 4,
                 }}
-                src={user?.avatar_url || undefined}
-                size="small"
               >
-                {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-              </Avatar>
-              <Text strong style={{ fontSize: 13 }}>
-                {user?.full_name}
-              </Text>
-            </div>
-          </Dropdown>
-        </Space>
+                Get Started
+              </Button>
+            </Link>
+          </Space>
+        )}
       </Header>
 
       {/* Main Body */}

@@ -127,7 +127,7 @@ export const LecturerRequestsTab: React.FC<LecturerRequestsTabProps> = ({ onStat
           queryParams.search = search.trim();
         }
 
-        if (status !== 'all') {
+        if (status) {
           queryParams.status = status;
         }
 
@@ -156,8 +156,18 @@ export const LecturerRequestsTab: React.FC<LecturerRequestsTabProps> = ({ onStat
   );
 
   useEffect(() => {
-    fetchRequests(1, pagination.limit, searchKeyword, statusFilter);
-    fetchStats();
+    let ignore = false;
+    const run = async () => {
+      await Promise.resolve();
+      if (!ignore) {
+        fetchRequests(1, pagination.limit, searchKeyword, statusFilter);
+        fetchStats();
+      }
+    };
+    void run();
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
@@ -167,8 +177,8 @@ export const LecturerRequestsTab: React.FC<LecturerRequestsTabProps> = ({ onStat
 
   const handleReset = () => {
     setSearchKeyword('');
-    setStatusFilter('all');
-    fetchRequests(1, pagination.limit, '', 'all');
+    setStatusFilter('pending');
+    fetchRequests(1, pagination.limit, '', 'pending');
   };
 
   const handleTableChange = (newPagination: TablePaginationConfig) => {

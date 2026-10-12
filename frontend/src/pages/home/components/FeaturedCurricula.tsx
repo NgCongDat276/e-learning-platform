@@ -422,6 +422,26 @@ export const FeaturedCurricula: React.FC<FeaturedCurriculaProps> = ({
           ))}
         </Row>
       )}
+
+      {/* Bottom CTA to Full Catalog */}
+      <div style={{ marginTop: 40, textAlign: 'center' }}>
+        <Link to="/courses">
+          <Button
+            size="large"
+            icon={<BookOutlined />}
+            style={{
+              height: 48,
+              padding: '0 32px',
+              fontWeight: 600,
+              fontSize: 15,
+              borderRadius: token.borderRadius,
+              boxShadow: '1px 1px 0px 0px #262626',
+            }}
+          >
+            Browse All Courses in Catalog →
+          </Button>
+        </Link>
+      </div>
     </section>
   );
 };
