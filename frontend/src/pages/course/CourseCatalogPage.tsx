@@ -340,9 +340,9 @@ export const CourseCatalogPage: React.FC = () => {
           </Col>
 
           {/* Action Buttons */}
-          <Col xs={8} md={4} lg={3} style={{ textAlign: 'right' }}>
+          <Col xs={8} md={4} lg={3} style={{ textAlign: 'left' }}>
             <Space size="small">
-              <Button
+              {/* <Button
                 type="primary"
                 icon={<SearchOutlined />}
                 onClick={() => triggerSearch(1, searchTerm, selectedLevel, selectedSort)}
@@ -356,7 +356,7 @@ export const CourseCatalogPage: React.FC = () => {
                 }}
               >
                 Search
-              </Button>
+              </Button> */}
               <Button
                 icon={<ReloadOutlined />}
                 onClick={handleResetFilters}
