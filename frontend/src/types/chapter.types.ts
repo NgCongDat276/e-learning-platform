@@ -1,5 +1,5 @@
 import type { ApiResponse } from './api';
-import type { LessonSummary } from './course.types';
+import type { Lesson } from './lesson.types';
 
 export interface Chapter {
   id: string;
@@ -7,7 +7,7 @@ export interface Chapter {
   title: string;
   order_index: number;
   created_at?: string;
-  lessons?: LessonSummary[];
+  lessons?: Lesson[];
 }
 
 export interface CreateChapterRequest {

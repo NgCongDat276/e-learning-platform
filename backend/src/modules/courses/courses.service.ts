@@ -423,8 +423,13 @@ export class CoursesService {
     userId?: string,
     userRole?: user_role,
   ) {
-    const course = await prisma.courses.findUnique({
-      where: { slug },
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        slug,
+      );
+
+    const course = await prisma.courses.findFirst({
+      where: isUuid ? { OR: [{ id: slug }, { slug }] } : { slug },
       include: {
         users: {
           select: {

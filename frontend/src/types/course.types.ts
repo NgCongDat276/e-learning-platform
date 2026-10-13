@@ -27,6 +27,8 @@ export interface LessonSummary {
   duration_seconds?: number | null;
   order_index: number;
   created_at?: string;
+  content_url?: string | null;
+  lesson_content?: string | null;
 }
 
 export interface ChapterSummary {

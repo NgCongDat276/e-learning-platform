@@ -8,6 +8,7 @@ import { HomePage } from '../pages/home/HomePage';
 import { ProfilePage } from '../pages/user/ProfilePage';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { TeacherCoursesPage } from '../pages/teacher/TeacherCoursesPage';
+import { CourseBuilderPage } from '../pages/teacher/CourseBuilderPage';
 import { CourseCatalogPage } from '../pages/course/CourseCatalogPage';
 import { CourseDetailPage } from '../pages/course/CourseDetailPage';
 import { NotFoundPage } from '../pages/error/NotFoundPage';
@@ -45,6 +46,10 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute allowedRoles={['lecturer', 'admin']} />}>
         <Route element={<MainLayout />}>
           <Route path="/teacher/courses" element={<TeacherCoursesPage />} />
+          <Route
+            path="/teacher/courses/:courseId/builder"
+            element={<CourseBuilderPage />}
+          />
         </Route>
       </Route>
 
