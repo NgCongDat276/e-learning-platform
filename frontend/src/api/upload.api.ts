@@ -11,11 +11,18 @@ import type {
 export const getPresignedUrlApi = async (
   data: PresignedUrlRequest
 ): Promise<PresignedUrlResponse> => {
-  const response = (await axiosClient.post(
-    '/upload/presigned-url',
-    data
-  )) as unknown as PresignedUrlResponse;
-  return response;
+  console.log('[upload.api] Calling getPresignedUrlApi with payload:', data);
+  try {
+    const response = (await axiosClient.post(
+      '/upload/presigned-url',
+      data
+    )) as unknown as PresignedUrlResponse;
+    console.log('[upload.api] getPresignedUrlApi response:', response);
+    return response;
+  } catch (err) {
+    console.error('[upload.api] getPresignedUrlApi failed:', err);
+    throw err;
+  }
 };
 
 /**
@@ -27,17 +34,32 @@ export const uploadFileToR2Api = async (
   file: File,
   onProgress?: (percent: number) => void
 ): Promise<void> => {
-  await axios.put(uploadUrl, file, {
-    headers: {
-      'Content-Type': file.type,
-    },
-    onUploadProgress: (progressEvent) => {
-      if (progressEvent.total && onProgress) {
-        const percent = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        onProgress(percent);
-      }
-    },
+  const mimeType = file.type || 'application/octet-stream';
+  console.log('[upload.api] Starting uploadFileToR2Api:', {
+    targetUrl: uploadUrl,
+    fileName: file.name,
+    fileSize: file.size,
+    contentType: mimeType,
   });
+
+  try {
+    await axios.put(uploadUrl, file, {
+      headers: {
+        'Content-Type': mimeType,
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          onProgress(percent);
+        }
+      },
+    });
+    console.log('[upload.api] uploadFileToR2Api finished successfully!');
+  } catch (err) {
+    console.error('[upload.api] uploadFileToR2Api failed directly during PUT request to R2:', err);
+    throw err;
+  }
 };
+

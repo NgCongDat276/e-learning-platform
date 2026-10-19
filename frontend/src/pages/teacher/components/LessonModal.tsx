@@ -105,6 +105,14 @@ export const LessonModal: React.FC<LessonModalProps> = ({
 
   // Xử lý upload file thẳng lên Cloudflare R2 qua Presigned URL
   const handleUploadR2 = async (file: File) => {
+    console.group('🚀 [Cloudflare R2 Upload Flow]');
+    console.log('1. [File Selected]:', {
+      name: file.name,
+      size: `${(file.size / 1024 / 1024).toFixed(2)} MB (${file.size} bytes)`,
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+
     setUploading(true);
     setUploadProgress(0);
     setUploadedFileName(file.name);
@@ -113,25 +121,43 @@ export const LessonModal: React.FC<LessonModalProps> = ({
       const isVideo = file.type.startsWith('video/');
       const isPdf = file.type === 'application/pdf';
       const folder = isVideo ? 'lessons/videos' : isPdf ? 'lessons/documents' : 'lessons/videos';
+      const mimeType = file.type || (isPdf ? 'application/pdf' : isVideo ? 'video/mp4' : 'application/octet-stream');
+
+      console.log('2. [Requesting Presigned URL from Backend]:', {
+        folder,
+        fileName: file.name,
+        contentType: mimeType,
+        fileSize: file.size,
+      });
 
       // 1. Lấy Presigned URL từ backend
       const presignedRes = await getPresignedUrlApi({
         fileName: file.name,
-        contentType: file.type || 'application/octet-stream',
+        contentType: mimeType,
         folder,
         fileSize: file.size,
       });
+
+      console.log('3. [Presigned URL Result from Server]:', presignedRes);
 
       if (!presignedRes.success || !presignedRes.data) {
         throw new Error('Failed to obtain presigned upload URL from server');
       }
 
       const { uploadUrl, fileUrl } = presignedRes.data;
+      console.log('4. [Starting Direct PUT Upload to Cloudflare R2]:', {
+        uploadUrl,
+        fileUrl,
+      });
 
       // 2. Upload trực tiếp file lên Cloudflare R2
       await uploadFileToR2Api(uploadUrl, file, (percent) => {
+        console.log(`[Upload Progress]: ${percent}%`);
         setUploadProgress(percent);
       });
+
+      console.log('5. [Upload Successful!]: Final file URL =', fileUrl);
+      console.groupEnd();
 
       // 3. Cập nhật URL vào form
       form.setFieldsValue({ content_url: fileUrl });
@@ -153,8 +179,30 @@ export const LessonModal: React.FC<LessonModalProps> = ({
         };
       }
     } catch (error: unknown) {
+      console.error('❌ [Upload Error Occurred]:', error);
+
+      if (isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          message: error.message,
+          code: error.code,
+          configUrl: error.config?.url,
+          configMethod: error.config?.method,
+          headers: error.config?.headers,
+          status: error.response?.status,
+          responseData: error.response?.data,
+        });
+      }
+      console.groupEnd();
+
       if (isAxiosError(error) && error.response?.data?.message) {
         message.error(error.response.data.message);
+      } else if (
+        isAxiosError(error) &&
+        (error.code === 'ERR_NETWORK' || error.message === 'Network Error')
+      ) {
+        message.error(
+          'Network Error: Trình duyệt bị chặn khi tải file lên Cloudflare R2. Nguyên nhân thường do Bucket R2 chưa cấu hình CORS hoặc R2 Token bị từ chối (Xem F12 Console).'
+        );
       } else if (error instanceof Error) {
         message.error(error.message);
       } else {
@@ -483,7 +531,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({
             showIcon
             icon={<QuestionCircleOutlined />}
             message="Quiz Assessment Linked"
-            description="This lesson will serve as a diagnostic check. You can configure question banks, time limits, and multiple-choice options under Module 6 (Quizzes & Question Bank)."
+            // description="This lesson will serve as a diagnostic check. You can configure question banks, time limits, and multiple-choice options under Module 6 (Quizzes & Question Bank)."
             style={{ marginBottom: 20, borderRadius: 6 }}
           />
         )}
