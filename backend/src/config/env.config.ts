@@ -15,4 +15,13 @@ export const envConfig = {
     ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || "1h",
     REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   },
+
+  // Cloudflare R2 Storage
+  R2: {
+    ACCOUNT_ID: process.env.R2_ACCOUNT_ID || "",
+    ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID || "",
+    SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY || "",
+    BUCKET_NAME: process.env.R2_BUCKET_NAME || "elearning-platform-storage",
+    PUBLIC_URL: process.env.R2_PUBLIC_URL || "",
+  },
 } as const;

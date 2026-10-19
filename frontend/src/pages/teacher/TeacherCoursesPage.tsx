@@ -425,7 +425,7 @@ export const TeacherCoursesPage: React.FC = () => {
           <Space size="small">
             {/* View live/preview */}
             <Tooltip title="Preview Course Page">
-              <Link to={`/courses/${record.slug}`} target="_blank">
+              <Link to={`/courses/${record.slug}`} target="_blank">  
                 <Button size="small" icon={<EyeOutlined />} style={{ borderRadius: 4 }} />
               </Link>
             </Tooltip>
