@@ -16,12 +16,19 @@ export class ChaptersService {
    * Helper kiểm tra quyền tác giả khóa học (hoặc Admin)
    */
   private async verifyCourseOwnership(
-    courseId: string,
+    courseIdOrSlug: string,
     userId: string,
     userRole: user_role,
   ) {
-    const course = await prisma.courses.findUnique({
-      where: { id: courseId },
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        courseIdOrSlug,
+      );
+
+    const course = await prisma.courses.findFirst({
+      where: isUuid
+        ? { OR: [{ id: courseIdOrSlug }, { slug: courseIdOrSlug }] }
+        : { slug: courseIdOrSlug },
       select: { id: true, lecturer_id: true, title: true, status: true },
     });
 
@@ -79,10 +86,10 @@ export class ChaptersService {
     userId: string,
     userRole: user_role,
   ) {
-    await this.verifyCourseOwnership(courseId, userId, userRole);
+    const course = await this.verifyCourseOwnership(courseId, userId, userRole);
 
     const chapters = await prisma.chapters.findMany({
-      where: { course_id: courseId },
+      where: { course_id: course.id },
       orderBy: { order_index: "asc" },
       include: {
         lessons: {
@@ -93,6 +100,7 @@ export class ChaptersService {
             title: true,
             lesson_type: true,
             content_url: true,
+            lesson_content: true,
             duration_seconds: true,
             order_index: true,
             created_at: true,
@@ -112,14 +120,18 @@ export class ChaptersService {
     userRole: user_role,
     input: CreateChapterInput,
   ) {
-    await this.verifyCourseOwnership(input.course_id, userId, userRole);
+    const course = await this.verifyCourseOwnership(
+      input.course_id,
+      userId,
+      userRole,
+    );
 
     let orderIndex = input.order_index;
 
     // Nếu không truyền order_index, tự động tính bằng max(order_index) + 1
     if (!orderIndex) {
       const lastChapter = await prisma.chapters.findFirst({
-        where: { course_id: input.course_id },
+        where: { course_id: course.id },
         orderBy: { order_index: "desc" },
         select: { order_index: true },
       });
@@ -130,7 +142,7 @@ export class ChaptersService {
       const existing = await prisma.chapters.findUnique({
         where: {
           course_id_order_index: {
-            course_id: input.course_id,
+            course_id: course.id,
             order_index: orderIndex,
           },
         },
@@ -145,7 +157,7 @@ export class ChaptersService {
 
     const newChapter = await prisma.chapters.create({
       data: {
-        course_id: input.course_id,
+        course_id: course.id,
         title: input.title,
         order_index: orderIndex,
       },
@@ -191,9 +203,13 @@ export class ChaptersService {
     userRole: user_role,
     input: ReorderChaptersInput,
   ) {
-    await this.verifyCourseOwnership(input.course_id, userId, userRole);
+    const course = await this.verifyCourseOwnership(
+      input.course_id,
+      userId,
+      userRole,
+    );
 
-    const { items, course_id } = input;
+    const { items } = input;
 
     // Sử dụng transaction:
     // Bước 1: Gán order_index âm tạm thời để tránh vi phạm unique constraint [course_id, order_index]
@@ -216,7 +232,7 @@ export class ChaptersService {
 
     // Trả về danh sách đã sắp xếp lại
     const updatedChapters = await prisma.chapters.findMany({
-      where: { course_id },
+      where: { course_id: course.id },
       orderBy: { order_index: "asc" },
       include: {
         lessons: {

@@ -157,7 +157,10 @@ export const CourseBuilderPage: React.FC = () => {
     setChapters(reordered);
 
     try {
-      const res = await reorderChaptersApi({ course_id: courseId, items });
+      const res = await reorderChaptersApi({
+        course_id: course?.id || courseId,
+        items,
+      });
       if (res.success && res.data) {
         setChapters(res.data);
       }
@@ -733,7 +736,7 @@ export const CourseBuilderPage: React.FC = () => {
         open={chapterModalOpen}
         onClose={() => setChapterModalOpen(false)}
         onSuccess={() => void fetchData()}
-        courseId={courseId || ''}
+        courseId={course?.id || courseId || ''}
         chapterToEdit={chapterToEdit}
       />
 

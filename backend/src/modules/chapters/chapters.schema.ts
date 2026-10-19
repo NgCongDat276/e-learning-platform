@@ -4,7 +4,7 @@ import { z } from "zod";
  * 1. Schema tạo chương học mới (Lecturer / Admin)
  */
 export const createChapterSchema = z.object({
-  course_id: z.string().uuid("Invalid course ID format"),
+  course_id: z.string().trim().min(1, "Course ID or slug is required"),
   title: z
     .string({
       error: "Chapter title is required",
@@ -36,7 +36,7 @@ export type UpdateChapterInput = z.infer<typeof updateChapterSchema>;
  * 3. Schema sắp xếp lại thứ tự các chương học trong khóa học
  */
 export const reorderChaptersSchema = z.object({
-  course_id: z.string().uuid("Invalid course ID format"),
+  course_id: z.string().trim().min(1, "Course ID or slug is required"),
   items: z
     .array(
       z.object({
@@ -62,10 +62,10 @@ export const chapterIdParamSchema = z.object({
 export type ChapterIdParam = z.infer<typeof chapterIdParamSchema>;
 
 /**
- * 5. Schema Params: courseId (UUID)
+ * 5. Schema Params: courseId (UUID hoặc Slug)
  */
 export const courseIdParamSchema = z.object({
-  courseId: z.string().uuid("Invalid course ID format"),
+  courseId: z.string().trim().min(1, "Course ID or slug is required"),
 });
 
 export type CourseIdParam = z.infer<typeof courseIdParamSchema>;

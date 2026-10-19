@@ -207,11 +207,21 @@ export class LessonsService {
 
     const { items, chapter_id } = input;
 
+    // Sử dụng transaction 2 bước tránh đụng độ unique constraint [chapter_id, order_index]
     await prisma.$transaction(async (tx) => {
-      for (const item of items) {
+      // Bước 1: Gán order_index âm tạm thời
+      for (let i = 0; i < items.length; i++) {
         await tx.lessons.update({
-          where: { id: item.id },
-          data: { order_index: item.order_index },
+          where: { id: items[i].id },
+          data: { order_index: -(i + 1) },
+        });
+      }
+
+      // Bước 2: Gán order_index chính thức
+      for (let i = 0; i < items.length; i++) {
+        await tx.lessons.update({
+          where: { id: items[i].id },
+          data: { order_index: items[i].order_index },
         });
       }
     });
