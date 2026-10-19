@@ -69,6 +69,15 @@ export class EnrollmentsService {
       throw new BadRequestError("This course is not open for enrollment");
     }
 
+    // Tạm thời chỉ cho phép ghi danh trực tiếp các khóa học miễn phí (price = 0 hoặc null).
+    // Khóa học có phí sẽ yêu cầu thanh toán qua Module Payment sau.
+    const coursePrice = Number(course.price || 0);
+    if (coursePrice > 0) {
+      throw new BadRequestError(
+        "Direct enrollment is currently available for free courses only. Paid courses will be supported in the upcoming Payment module.",
+      );
+    }
+
     // Kiểm tra bản ghi ghi danh hiện tại
     const existingEnrollment = await prisma.enrollments.findUnique({
       where: {
