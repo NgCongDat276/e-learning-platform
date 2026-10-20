@@ -13,6 +13,7 @@ import {
   Space,
   Skeleton,
   Empty,
+  Progress,
   theme,
   App,
 } from 'antd';
@@ -28,11 +29,19 @@ import {
   FileTextOutlined,
   QuestionCircleOutlined,
   GlobalOutlined,
+  LoginOutlined,
+  RightOutlined,
+  CreditCardOutlined,
 } from '@ant-design/icons';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { getCourseBySlugApi } from '../../api/course.api';
+import {
+  getEnrollmentStatusApi,
+  enrollCourseApi,
+} from '../../api/enrollment.api';
 import type { CourseDetail } from '../../types/course.types';
+import type { EnrollmentStatusResult } from '../../types/enrollment.types';
 import { useAuth } from '../../context/useAuth';
 
 const { Title, Paragraph, Text } = Typography;
@@ -47,6 +56,10 @@ export const CourseDetailPage: React.FC = () => {
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [notFound, setNotFound] = useState<boolean>(false);
+  const [enrollmentStatus, setEnrollmentStatus] =
+    useState<EnrollmentStatusResult | null>(null);
+  const [statusLoading, setStatusLoading] = useState<boolean>(false);
+  const [enrolling, setEnrolling] = useState<boolean>(false);
 
   useEffect(() => {
     let ignore = false;
@@ -92,6 +105,41 @@ export const CourseDetailPage: React.FC = () => {
     };
   }, [slug, message]);
 
+  // Kiểm tra trạng thái ghi danh của người dùng
+  useEffect(() => {
+    let ignore = false;
+
+    const checkEnrollment = async () => {
+      if (!isAuthenticated || !slug) {
+        setEnrollmentStatus(null);
+        return;
+      }
+
+      setStatusLoading(true);
+      try {
+        const res = await getEnrollmentStatusApi(slug);
+        if (ignore) return;
+        if (res.success && res.data) {
+          setEnrollmentStatus(res.data);
+        }
+      } catch {
+        if (!ignore) {
+          setEnrollmentStatus(null);
+        }
+      } finally {
+        if (!ignore) {
+          setStatusLoading(false);
+        }
+      }
+    };
+
+    void checkEnrollment();
+
+    return () => {
+      ignore = true;
+    };
+  }, [slug, isAuthenticated]);
+
   const formatPrice = (price: number | string | undefined) => {
     if (price === undefined || price === null || price === 0 || price === '0') {
       return 'Free';
@@ -111,15 +159,70 @@ export const CourseDetailPage: React.FC = () => {
     return `${minutes} minutes`;
   };
 
-  const handleEnrollClick = () => {
+  const handleEnrollClick = async () => {
     if (!isAuthenticated) {
       message.info('Please sign in to enroll in this course');
-      navigate('/login');
+      navigate('/login', { state: { from: `/courses/${slug}` } });
       return;
     }
-    message.success(
-      'Enrollment feature will be active upon completing Module 5. Stay tuned!'
-    );
+
+    // Nếu đã ghi danh hoặc là tác giả -> Chuyển thẳng vào phòng học
+    if (enrollmentStatus?.isEnrolled) {
+      const targetLesson = enrollmentStatus.firstLessonId;
+      navigate(
+        targetLesson
+          ? `/courses/${slug}/learn/${targetLesson}`
+          : `/courses/${slug}/learn`
+      );
+      return;
+    }
+
+    // Nếu là khóa học có phí và chưa ghi danh -> Thông báo tính năng thanh toán đang phát triển
+    const isPaidCourse = Number(course?.price || 0) > 0;
+    if (!enrollmentStatus?.isEnrolled && isPaidCourse) {
+      message.info(
+        'Direct enrollment is currently open for free courses only. Paid checkout will be supported in the upcoming Payment module.'
+      );
+      return;
+    }
+
+    if (!slug) return;
+
+    setEnrolling(true);
+    try {
+      const res = await enrollCourseApi(slug);
+      if (res.success && res.data) {
+        message.success('Successfully enrolled in course! Welcome aboard.');
+        setEnrollmentStatus({
+          isEnrolled: true,
+          isAuthor: false,
+          status: 'active',
+          progressPercent: 0,
+          completedLessons: 0,
+          totalLessons:
+            course?.chapters?.reduce(
+              (acc, ch) => acc + (ch.lessons?.length || 0),
+              0
+            ) || 0,
+          firstLessonId: res.data.firstLessonId,
+        });
+
+        const targetLesson = res.data.firstLessonId;
+        navigate(
+          targetLesson
+            ? `/courses/${slug}/learn/${targetLesson}`
+            : `/courses/${slug}/learn`
+        );
+      }
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response?.data?.message) {
+        message.error(error.response.data.message);
+      } else {
+        message.error('Failed to enroll in course. Please try again.');
+      }
+    } finally {
+      setEnrolling(false);
+    }
   };
 
   if (loading) {
@@ -509,45 +612,157 @@ export const CourseDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Price Tag */}
-              <div style={{ marginBottom: 16 }}>
-                <Text
-                  strong
+              {/* Enrollment State / Price Tag */}
+              {enrollmentStatus?.isEnrolled ? (
+                <div style={{ marginBottom: 20 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: 10,
+                    }}
+                  >
+                    <Tag
+                      color="success"
+                      style={{
+                        margin: 0,
+                        fontWeight: 700,
+                        padding: '2px 10px',
+                        borderRadius: 9999,
+                        textTransform: 'uppercase',
+                        fontSize: 11,
+                      }}
+                    >
+                      {enrollmentStatus.isAuthor ? 'Instructor View' : 'Enrolled'}
+                    </Tag>
+                    <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>
+                      {enrollmentStatus.progressPercent}% Completed
+                    </Text>
+                  </div>
+
+                  {!enrollmentStatus.isAuthor && (
+                    <div style={{ marginBottom: 12 }}>
+                      <Progress
+                        percent={enrollmentStatus.progressPercent}
+                        strokeColor="#059669"
+                        size="small"
+                        showInfo={false}
+                      />
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 12, display: 'block', marginTop: 4 }}
+                      >
+                        {enrollmentStatus.completedLessons} of{' '}
+                        {enrollmentStatus.totalLessons} lessons completed
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ marginBottom: 16 }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: 28,
+                      letterSpacing: -0.5,
+                      color: token.colorText,
+                      display: 'block',
+                    }}
+                  >
+                    {formatPrice(course.price)}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    One-time purchase · Full lifetime access
+                  </Text>
+                  {Number(course.price || 0) > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <Tag
+                        style={{
+                          borderRadius: 9999,
+                          fontWeight: 600,
+                          fontSize: 11,
+                          backgroundColor: '#fef3c7',
+                          color: '#92400e',
+                          border: '1px solid #fde68a',
+                        }}
+                      >
+                        Payment Gateway Coming Soon
+                      </Tag>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CTA Enroll / Classroom Button */}
+              {enrollmentStatus?.isEnrolled ? (
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  loading={statusLoading}
+                  icon={<RightOutlined />}
+                  onClick={handleEnrollClick}
                   style={{
-                    fontSize: 28,
-                    letterSpacing: -0.5,
+                    height: 48,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    backgroundColor: token.colorPrimary,
                     color: token.colorText,
-                    display: 'block',
+                    border: `1px solid ${token.colorText}`,
+                    boxShadow: 'var(--shadow-hard)',
+                    borderRadius: 4,
+                    marginBottom: 16,
                   }}
                 >
-                  {formatPrice(course.price)}
-                </Text>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  One-time purchase · Full lifetime access
-                </Text>
-              </div>
-
-              {/* CTA Enroll Button */}
-              <Button
-                type="primary"
-                size="large"
-                block
-                icon={<PlayCircleOutlined />}
-                onClick={handleEnrollClick}
-                style={{
-                  height: 48,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  backgroundColor: token.colorPrimary,
-                  color: token.colorText,
-                  border: `1px solid ${token.colorText}`,
-                  boxShadow: 'var(--shadow-hard)',
-                  borderRadius: 4,
-                  marginBottom: 16,
-                }}
-              >
-                Enroll In Course
-              </Button>
+                  {enrollmentStatus.isAuthor
+                    ? 'Enter Classroom (Instructor)'
+                    : enrollmentStatus.progressPercent === 100
+                    ? 'Review Course Material'
+                    : 'Continue Learning'}
+                </Button>
+              ) : Number(course.price || 0) > 0 ? (
+                <Button
+                  size="large"
+                  block
+                  icon={<CreditCardOutlined />}
+                  onClick={handleEnrollClick}
+                  style={{
+                    height: 48,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    backgroundColor: '#f5f5f5',
+                    color: '#525252',
+                    border: `1px solid ${token.colorBorder}`,
+                    borderRadius: 4,
+                    marginBottom: 16,
+                  }}
+                >
+                  Buy Course (Checkout Coming Soon)
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  loading={enrolling || statusLoading}
+                  icon={!isAuthenticated ? <LoginOutlined /> : <PlayCircleOutlined />}
+                  onClick={handleEnrollClick}
+                  style={{
+                    height: 48,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    backgroundColor: token.colorPrimary,
+                    color: token.colorText,
+                    border: `1px solid ${token.colorText}`,
+                    boxShadow: 'var(--shadow-hard)',
+                    borderRadius: 4,
+                    marginBottom: 16,
+                  }}
+                >
+                  {!isAuthenticated ? 'Sign In To Enroll Free' : 'Enroll For Free'}
+                </Button>
+              )}
 
               {/* Checklist */}
               <Divider style={{ margin: '16px 0' }} />

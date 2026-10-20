@@ -10,6 +10,7 @@ import lecturerRequestsRoutes from "./modules/lecturer-requests/lecturer-request
 import uploadRoutes from "./modules/upload/upload.routes";
 import chaptersRoutes from "./modules/chapters/chapters.routes";
 import lessonsRoutes from "./modules/lessons/lessons.routes";
+import enrollmentsRoutes from "./modules/enrollments/enrollments.routes";
 // Import các tiện ích và middleware từ common
 import { NotFoundError } from "./common/errors/app-error";
 import { errorHandler } from "./common/middlewares/error-handler";
@@ -72,6 +73,7 @@ app.use("/lecturer-requests", lecturerRequestsRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/chapters", chaptersRoutes);
 app.use("/lessons", lessonsRoutes);
+app.use("/enrollments", enrollmentsRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(
