@@ -398,10 +398,22 @@ export const TeacherCoursesPage: React.FC = () => {
             </Text>
           </Space>
           <Space size="small">
-            <TeamOutlined style={{ color: token.colorTextSecondary }} />
-            <Text style={{ fontSize: 13 }}>
-              <Text strong>{record._count?.enrollments || 0}</Text> students
-            </Text>
+            <Tooltip title="Click to view enrolled students roster">
+              <Link
+                to={`/teacher/courses/${record.id}/students`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: token.colorText,
+                }}
+              >
+                <TeamOutlined style={{ color: token.colorTextSecondary }} />
+                <Text style={{ fontSize: 13, textDecoration: 'underline' }}>
+                  <Text strong>{record._count?.enrollments || 0}</Text> students
+                </Text>
+              </Link>
+            </Tooltip>
           </Space>
         </Space>
       ),
@@ -416,7 +428,7 @@ export const TeacherCoursesPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 220,
+      width: 250,
       render: (_, record) => {
         const isActionLoading = actionLoadingId === record.id;
         const willPublish = record.status !== 'published';
@@ -434,6 +446,22 @@ export const TeacherCoursesPage: React.FC = () => {
             <Tooltip title="Curriculum Builder (Chapters & Lessons)">
               <Link to={`/teacher/courses/${record.id}/builder`}>
                 <Button size="small" icon={<UnorderedListOutlined />} style={{ borderRadius: 4 }} />
+              </Link>
+            </Tooltip>
+
+            {/* View Enrolled Students & Progress */}
+            <Tooltip title="View Enrolled Students & Learning Progress">
+              <Link to={`/teacher/courses/${record.id}/students`}>
+                <Button
+                  size="small"
+                  icon={<TeamOutlined />}
+                  style={{
+                    borderRadius: 4,
+                    backgroundColor: '#f0fdf4',
+                    borderColor: '#bbf7d0',
+                    color: '#16a34a',
+                  }}
+                />
               </Link>
             </Tooltip>
 

@@ -9,6 +9,7 @@ import { ProfilePage } from '../pages/user/ProfilePage';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { TeacherCoursesPage } from '../pages/teacher/TeacherCoursesPage';
 import { CourseBuilderPage } from '../pages/teacher/CourseBuilderPage';
+import { CourseStudentsPage } from '../pages/teacher/CourseStudentsPage';
 import { CourseCatalogPage } from '../pages/course/CourseCatalogPage';
 import { CourseDetailPage } from '../pages/course/CourseDetailPage';
 import { LearningPage } from '../pages/learning/LearningPage';
@@ -58,6 +59,10 @@ export const AppRoutes: React.FC = () => {
           <Route
             path="/teacher/courses/:courseId/builder"
             element={<CourseBuilderPage />}
+          />
+          <Route
+            path="/teacher/courses/:courseId/students"
+            element={<CourseStudentsPage />}
           />
         </Route>
       </Route>
