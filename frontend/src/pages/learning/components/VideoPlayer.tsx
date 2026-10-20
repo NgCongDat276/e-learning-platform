@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Typography, theme } from "antd";
+import { Typography } from "antd";
 import { PlayCircleOutlined } from "@ant-design/icons";
 import type { ClassroomLesson } from "../../../types/enrollment.types";
 
@@ -16,7 +16,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onEnded,
   onSaveProgress,
 }) => {
-  const { token } = theme.useToken();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastSavedTimeRef = useRef<number>(0);
 

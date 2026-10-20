@@ -12,6 +12,7 @@ import { CourseBuilderPage } from '../pages/teacher/CourseBuilderPage';
 import { CourseCatalogPage } from '../pages/course/CourseCatalogPage';
 import { CourseDetailPage } from '../pages/course/CourseDetailPage';
 import { LearningPage } from '../pages/learning/LearningPage';
+import { MyCoursesPage } from '../pages/student/MyCoursesPage';
 import { NotFoundPage } from '../pages/error/NotFoundPage';
 import { ProtectedRoute } from '../components/guards/ProtectedRoute';
 import { GuestRoute } from '../components/guards/GuestRoute';
@@ -40,6 +41,7 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/my-courses" element={<MyCoursesPage />} />
         </Route>
         {/* Protected Student Learning Classroom (Full-screen Distraction-free Workspace) */}
         <Route path="/courses/:slug/learn" element={<LearningPage />} />

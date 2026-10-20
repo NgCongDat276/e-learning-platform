@@ -1,7 +1,7 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button, Typography, Space, Tag, Dropdown, Avatar, theme } from 'antd';
-import type { MenuProps } from 'antd';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button, Typography, Space, Tag, Dropdown, Avatar, theme } from "antd";
+import type { MenuProps } from "antd";
 import {
   BookOutlined,
   UserAddOutlined,
@@ -9,8 +9,8 @@ import {
   LogoutOutlined,
   DashboardOutlined,
   TeamOutlined,
-} from '@ant-design/icons';
-import { useAuth } from '../../../context/useAuth';
+} from "@ant-design/icons";
+import { useAuth } from "../../../context/useAuth";
 
 const { Text } = Typography;
 
@@ -21,32 +21,35 @@ export const HomeHeader: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
-  const isAdmin = user?.role?.toLowerCase() === 'admin';
-  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isLecturer = user?.role?.toLowerCase() === "lecturer";
 
-  const userMenuItems: MenuProps['items'] = [
+  const userMenuItems: MenuProps["items"] = [
     {
-      key: 'user-info',
+      key: "user-info",
       disabled: true,
       label: (
-        <div style={{ padding: '6px 4px' }}>
-          <Text strong style={{ display: 'block', color: token.colorText, fontSize: 14 }}>
+        <div style={{ padding: "6px 4px" }}>
+          <Text
+            strong
+            style={{ display: "block", color: token.colorText, fontSize: 14 }}
+          >
             {user?.full_name}
           </Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {user?.email}
           </Text>
-          {user?.lecturer_request?.status === 'pending' && (
+          {user?.lecturer_request?.status === "pending" && (
             <div style={{ marginTop: 6 }}>
               <Tag
                 style={{
                   fontSize: 10,
-                  backgroundColor: '#fef3c7',
-                  color: '#b45309',
-                  borderColor: '#fcd34d',
+                  backgroundColor: "#fef3c7",
+                  color: "#b45309",
+                  borderColor: "#fcd34d",
                   borderRadius: 9999,
                 }}
               >
@@ -57,16 +60,16 @@ export const HomeHeader: React.FC = () => {
         </div>
       ),
     },
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'profile',
+      key: "profile",
       icon: <UserOutlined />,
       label: <Link to="/profile">Account Settings</Link>,
     },
     ...(isAdmin
       ? [
           {
-            key: 'admin-users',
+            key: "admin-users",
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
           },
@@ -75,24 +78,24 @@ export const HomeHeader: React.FC = () => {
     ...(isLecturer
       ? [
           {
-            key: 'teacher-courses',
+            key: "teacher-courses",
             icon: <DashboardOutlined />,
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
           },
         ]
       : [
           {
-            key: 'courses',
+            key: "courses",
             icon: <BookOutlined />,
-            label: <Link to="/courses">Browse Courses</Link>,
+            label: <Link to="/my-courses">My Courses</Link>,
           },
         ]),
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'logout',
+      key: "logout",
       danger: true,
       icon: <LogoutOutlined />,
-      label: 'Sign Out',
+      label: "Sign Out",
       onClick: handleLogout,
     },
   ];
@@ -102,7 +105,7 @@ export const HomeHeader: React.FC = () => {
       style={{
         borderBottom: `1px solid ${token.colorBorder}`,
         backgroundColor: token.colorBgContainer,
-        position: 'sticky',
+        position: "sticky",
         top: 0,
         zIndex: 100,
       }}
@@ -110,32 +113,47 @@ export const HomeHeader: React.FC = () => {
       <div
         style={{
           maxWidth: 1200,
-          margin: '0 auto',
-          padding: '16px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          margin: "0 auto",
+          padding: "16px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           gap: 16,
         }}
       >
         {/* Brand Logo & Platform Badge */}
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+        <Link
+          to="/"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 10,
+            textDecoration: "none",
+          }}
+        >
           <div
             style={{
               width: 34,
               height: 34,
               backgroundColor: token.colorText,
               borderRadius: token.borderRadius,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'var(--shadow-hard)',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "var(--shadow-hard)",
             }}
           >
             <BookOutlined style={{ color: token.colorPrimary, fontSize: 18 }} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <Text strong style={{ fontSize: 20, letterSpacing: -0.6, color: token.colorText }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <Text
+              strong
+              style={{
+                fontSize: 20,
+                letterSpacing: -0.6,
+                color: token.colorText,
+              }}
+            >
               EDUTECH
             </Text>
             <span
@@ -144,7 +162,7 @@ export const HomeHeader: React.FC = () => {
                 fontWeight: 700,
                 backgroundColor: token.colorPrimary,
                 color: token.colorText,
-                padding: '2px 6px',
+                padding: "2px 6px",
                 borderRadius: token.borderRadius,
                 border: `1px solid ${token.colorText}`,
               }}
@@ -157,8 +175,8 @@ export const HomeHeader: React.FC = () => {
         {/* Editorial Navigation Links */}
         <nav
           style={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 28,
           }}
           className="hidden-mobile"
@@ -167,7 +185,7 @@ export const HomeHeader: React.FC = () => {
             to="/courses"
             style={{
               color: token.colorText,
-              textDecoration: 'none',
+              textDecoration: "none",
               fontWeight: 500,
               fontSize: 14,
             }}
@@ -178,7 +196,7 @@ export const HomeHeader: React.FC = () => {
             href="#methodology"
             style={{
               color: token.colorText,
-              textDecoration: 'none',
+              textDecoration: "none",
               fontWeight: 500,
               fontSize: 14,
             }}
@@ -189,7 +207,7 @@ export const HomeHeader: React.FC = () => {
             href="#interactive-demo"
             style={{
               color: token.colorText,
-              textDecoration: 'none',
+              textDecoration: "none",
               fontWeight: 500,
               fontSize: 14,
             }}
@@ -200,7 +218,7 @@ export const HomeHeader: React.FC = () => {
             href="#teach-with-us"
             style={{
               color: token.colorText,
-              textDecoration: 'none',
+              textDecoration: "none",
               fontWeight: 500,
               fontSize: 14,
             }}
@@ -211,7 +229,7 @@ export const HomeHeader: React.FC = () => {
             href="#faq"
             style={{
               color: token.colorText,
-              textDecoration: 'none',
+              textDecoration: "none",
               fontWeight: 500,
               fontSize: 14,
             }}
@@ -226,31 +244,47 @@ export const HomeHeader: React.FC = () => {
             <Space size="middle" align="center">
               <Tag
                 style={{
-                  textTransform: 'uppercase',
+                  textTransform: "uppercase",
                   fontWeight: 700,
                   fontSize: 11,
                   borderRadius: 9999,
-                  backgroundColor: isAdmin ? '#fef08a' : isLecturer ? '#e0e7ff' : token.colorBgLayout,
-                  borderColor: isAdmin ? '#ca8a04' : isLecturer ? '#a5b4fc' : token.colorBorder,
-                  color: isAdmin ? '#713f12' : isLecturer ? '#3730a3' : token.colorText,
-                  padding: '2px 10px',
+                  backgroundColor: isAdmin
+                    ? "#fef08a"
+                    : isLecturer
+                      ? "#e0e7ff"
+                      : token.colorBgLayout,
+                  borderColor: isAdmin
+                    ? "#ca8a04"
+                    : isLecturer
+                      ? "#a5b4fc"
+                      : token.colorBorder,
+                  color: isAdmin
+                    ? "#713f12"
+                    : isLecturer
+                      ? "#3730a3"
+                      : token.colorText,
+                  padding: "2px 10px",
                 }}
               >
                 {user.role}
               </Tag>
 
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                arrow
+              >
                 <div
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
+                    display: "inline-flex",
+                    alignItems: "center",
                     gap: 8,
-                    cursor: 'pointer',
-                    padding: '4px 10px',
+                    cursor: "pointer",
+                    padding: "4px 10px",
                     borderRadius: token.borderRadius,
                     border: `1px solid ${token.colorBorder}`,
                     backgroundColor: token.colorBgContainer,
-                    boxShadow: 'var(--shadow-hard)',
+                    boxShadow: "var(--shadow-hard)",
                   }}
                 >
                   <Avatar
@@ -262,7 +296,7 @@ export const HomeHeader: React.FC = () => {
                     size="small"
                     src={user.avatar_url || undefined}
                   >
-                    {user.full_name?.charAt(0).toUpperCase() || 'U'}
+                    {user.full_name?.charAt(0).toUpperCase() || "U"}
                   </Avatar>
                   <Text strong style={{ fontSize: 14 }}>
                     {user.full_name}
@@ -291,7 +325,7 @@ export const HomeHeader: React.FC = () => {
                   style={{
                     fontWeight: 600,
                     borderRadius: token.borderRadius,
-                    boxShadow: 'var(--shadow-hard)',
+                    boxShadow: "var(--shadow-hard)",
                   }}
                 >
                   Get Started Free

@@ -1,7 +1,8 @@
 import React from "react";
 import { Typography, Button, Progress, Tooltip, Divider, theme } from "antd";
 import {
-  ArrowLeftOutlined,
+  HomeOutlined,
+  // ArrowLeftOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   TrophyOutlined,
@@ -24,7 +25,7 @@ interface LearningHeaderProps {
 export const LearningHeader: React.FC<LearningHeaderProps> = ({
   courseTitle,
   lessonTitle,
-  courseSlug,
+  // courseSlug,
   progressPercent,
   completedLessons,
   totalLessons,
@@ -53,12 +54,12 @@ export const LearningHeader: React.FC<LearningHeaderProps> = ({
       <div
         style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}
       >
-        <Tooltip title="Back to course overview">
-          <Link to={`/courses/${courseSlug}`}>
+        <Tooltip title="Back to dashboard">
+          <Link to={`/`}>
             <Button
               type="default"
               icon={
-                <ArrowLeftOutlined
+                <HomeOutlined
                   style={{ color: token.colorText, fontSize: 15 }}
                 />
               }

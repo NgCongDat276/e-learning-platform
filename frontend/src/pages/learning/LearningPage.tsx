@@ -80,40 +80,59 @@ export const LearningPage: React.FC = () => {
   }, [slug, message]);
 
   useEffect(() => {
-    void fetchData();
+    let ignore = false;
+    const load = async () => {
+      await Promise.resolve();
+      if (!ignore) {
+        await fetchData();
+      }
+    };
+    void load();
+    return () => {
+      ignore = true;
+    };
   }, [fetchData]);
 
   // Set active lesson when data or lessonId in URL changes
   useEffect(() => {
     if (!classroomData || classroomData.chapters.length === 0) return;
 
-    if (lessonId) {
-      for (const ch of classroomData.chapters) {
-        const found = ch.lessons.find((l) => l.id === lessonId);
-        if (found) {
-          setActiveLesson(found);
-          setActiveChapter(ch);
-          return;
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (ignore) return;
+
+      if (lessonId) {
+        for (const ch of classroomData.chapters) {
+          const found = ch.lessons.find((l) => l.id === lessonId);
+          if (found) {
+            setActiveLesson(found);
+            setActiveChapter(ch);
+            return;
+          }
         }
       }
-    }
 
-    // Default target: recommended next incomplete lesson or first lesson
-    const targetId =
-      classroomData.progress.nextLessonId ||
-      classroomData.chapters[0]?.lessons[0]?.id;
+      // Default target: recommended next incomplete lesson or first lesson
+      const targetId =
+        classroomData.progress.nextLessonId ||
+        classroomData.chapters[0]?.lessons[0]?.id;
 
-    if (targetId) {
-      for (const ch of classroomData.chapters) {
-        const found = ch.lessons.find((l) => l.id === targetId);
-        if (found) {
-          setActiveLesson(found);
-          setActiveChapter(ch);
-          navigate(`/courses/${slug}/learn/${targetId}`, { replace: true });
-          return;
+      if (targetId) {
+        for (const ch of classroomData.chapters) {
+          const found = ch.lessons.find((l) => l.id === targetId);
+          if (found) {
+            setActiveLesson(found);
+            setActiveChapter(ch);
+            navigate(`/courses/${slug}/learn/${targetId}`, { replace: true });
+            return;
+          }
         }
       }
-    }
+    });
+
+    return () => {
+      ignore = true;
+    };
   }, [classroomData, lessonId, slug, navigate]);
 
   // Handle saving video playback position

@@ -1,7 +1,17 @@
-import React from 'react';
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Typography, Space, Tag, Dropdown, Avatar, theme, Menu, Button } from 'antd';
-import type { MenuProps } from 'antd';
+import React from "react";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import {
+  Layout,
+  Typography,
+  Space,
+  Tag,
+  Dropdown,
+  Avatar,
+  theme,
+  Menu,
+  Button,
+} from "antd";
+import type { MenuProps } from "antd";
 import {
   BookOutlined,
   UserOutlined,
@@ -9,8 +19,9 @@ import {
   DashboardOutlined,
   AppstoreOutlined,
   TeamOutlined,
-} from '@ant-design/icons';
-import { useAuth } from '../context/useAuth';
+  ReadOutlined,
+} from "@ant-design/icons";
+import { useAuth } from "../context/useAuth";
 
 const { Header, Content, Footer } = Layout;
 const { Text } = Typography;
@@ -23,19 +34,19 @@ export const MainLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
-  const isAdmin = user?.role?.toLowerCase() === 'admin';
-  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isLecturer = user?.role?.toLowerCase() === "lecturer";
 
-  const userMenuItems: MenuProps['items'] = [
+  const userMenuItems: MenuProps["items"] = [
     {
-      key: 'user-header',
+      key: "user-header",
       disabled: true,
       label: (
-        <div style={{ padding: '4px 0' }}>
-          <Text strong style={{ display: 'block', color: token.colorText }}>
+        <div style={{ padding: "4px 0" }}>
+          <Text strong style={{ display: "block", color: token.colorText }}>
             {user?.full_name}
           </Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
@@ -47,19 +58,19 @@ export const MainLayout: React.FC = () => {
                 style={{
                   borderRadius: 9999,
                   fontSize: 10,
-                  textTransform: 'uppercase',
+                  textTransform: "uppercase",
                   fontWeight: 700,
                   border: `1px solid ${token.colorBorder}`,
                   backgroundColor: isAdmin
-                    ? '#fef08a'
+                    ? "#fef08a"
                     : isLecturer
-                    ? '#e0e7ff'
-                    : '#f5f5f5',
+                      ? "#e0e7ff"
+                      : "#f5f5f5",
                   color: isAdmin
-                    ? '#713f12'
+                    ? "#713f12"
                     : isLecturer
-                    ? '#3730a3'
-                    : token.colorTextSecondary,
+                      ? "#3730a3"
+                      : token.colorTextSecondary,
                 }}
               >
                 {user.role}
@@ -69,16 +80,21 @@ export const MainLayout: React.FC = () => {
         </div>
       ),
     },
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'profile',
+      key: "profile",
       icon: <UserOutlined />,
       label: <Link to="/profile">My Profile</Link>,
+    },
+    {
+      key: "my-courses",
+      icon: <ReadOutlined />,
+      label: <Link to="/my-courses">My Courses</Link>,
     },
     ...(isAdmin
       ? [
           {
-            key: 'admin-users',
+            key: "admin-users",
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
           },
@@ -87,45 +103,46 @@ export const MainLayout: React.FC = () => {
     ...(isLecturer
       ? [
           {
-            key: 'teacher-courses',
+            key: "teacher-courses",
             icon: <DashboardOutlined />,
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
           },
         ]
-      : !isAdmin
-      ? [
-          {
-            key: 'courses',
-            icon: <DashboardOutlined />,
-            label: <Link to="/courses">My Courses</Link>,
-          },
-        ]
       : []),
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'logout',
+      key: "logout",
       danger: true,
       icon: <LogoutOutlined />,
-      label: 'Sign Out',
+      label: "Sign Out",
       onClick: handleLogout,
     },
   ];
 
-  const navMenuItems: MenuProps['items'] = [
+  const navMenuItems: MenuProps["items"] = [
     {
-      key: '/',
+      key: "/",
       icon: <AppstoreOutlined />,
       label: <Link to="/">Home</Link>,
     },
     {
-      key: '/courses',
+      key: "/courses",
       icon: <BookOutlined />,
       label: <Link to="/courses">Courses</Link>,
     },
+    ...(isAuthenticated
+      ? [
+          {
+            key: "/my-courses",
+            icon: <ReadOutlined />,
+            label: <Link to="/my-courses">My Courses</Link>,
+          },
+        ]
+      : []),
     ...(isLecturer
       ? [
           {
-            key: '/teacher/courses',
+            key: "/teacher/courses",
             icon: <DashboardOutlined />,
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
           },
@@ -134,7 +151,7 @@ export const MainLayout: React.FC = () => {
     ...(isAdmin
       ? [
           {
-            key: '/admin/users',
+            key: "/admin/users",
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
           },
@@ -143,33 +160,49 @@ export const MainLayout: React.FC = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh', backgroundColor: token.colorBgLayout }}>
+    <Layout
+      style={{ minHeight: "100vh", backgroundColor: token.colorBgLayout }}
+    >
       {/* Top Header */}
       <Header
         style={{
-          position: 'sticky',
+          position: "sticky",
           top: 0,
           zIndex: 100,
           backgroundColor: token.colorBgContainer,
           borderBottom: `1px solid ${token.colorBorder}`,
-          padding: '0 28px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          padding: "0 28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           height: 64,
         }}
       >
         <Space size="large" align="center">
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <Link
+            to="/"
+            style={{
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <Space size="small" align="center">
               <BookOutlined style={{ fontSize: 22, color: token.colorText }} />
-              <Text strong style={{ fontSize: 17, letterSpacing: -0.5, color: token.colorText }}>
-                EDUTECH{' '}
+              <Text
+                strong
+                style={{
+                  fontSize: 17,
+                  letterSpacing: -0.5,
+                  color: token.colorText,
+                }}
+              >
+                EDUTECH{" "}
                 <span
                   style={{
                     color: token.colorPrimary,
                     background: token.colorText,
-                    padding: '2px 6px',
+                    padding: "2px 6px",
                     borderRadius: 4,
                     fontSize: 13,
                     fontWeight: 700,
@@ -186,8 +219,8 @@ export const MainLayout: React.FC = () => {
             selectedKeys={[location.pathname]}
             items={navMenuItems}
             style={{
-              borderBottom: 'none',
-              backgroundColor: 'transparent',
+              borderBottom: "none",
+              backgroundColor: "transparent",
               minWidth: 380,
             }}
           />
@@ -198,7 +231,7 @@ export const MainLayout: React.FC = () => {
           <Space size="middle" align="center">
             <Tag
               style={{
-                textTransform: 'uppercase',
+                textTransform: "uppercase",
                 fontWeight: 600,
                 fontSize: 11,
                 borderRadius: 9999,
@@ -209,18 +242,22 @@ export const MainLayout: React.FC = () => {
               {user.role}
             </Tag>
 
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+            <Dropdown
+              menu={{ items: userMenuItems }}
+              placement="bottomRight"
+              arrow
+            >
               <div
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
+                  display: "inline-flex",
+                  alignItems: "center",
                   gap: 8,
-                  cursor: 'pointer',
-                  padding: '4px 10px',
+                  cursor: "pointer",
+                  padding: "4px 10px",
                   borderRadius: token.borderRadius,
                   border: `1px solid ${token.colorBorder}`,
                   backgroundColor: token.colorBgContainer,
-                  boxShadow: '1px 1px 0px 0px #262626',
+                  boxShadow: "1px 1px 0px 0px #262626",
                 }}
               >
                 <Avatar
@@ -232,7 +269,7 @@ export const MainLayout: React.FC = () => {
                   src={user.avatar_url || undefined}
                   size="small"
                 >
-                  {user.full_name?.charAt(0).toUpperCase() || 'U'}
+                  {user.full_name?.charAt(0).toUpperCase() || "U"}
                 </Avatar>
                 <Text strong style={{ fontSize: 13 }}>
                   {user.full_name}
@@ -243,7 +280,9 @@ export const MainLayout: React.FC = () => {
         ) : (
           <Space size="small">
             <Link to="/login">
-              <Button style={{ fontWeight: 600, borderRadius: 4 }}>Sign In</Button>
+              <Button style={{ fontWeight: 600, borderRadius: 4 }}>
+                Sign In
+              </Button>
             </Link>
             <Link to="/register">
               <Button
@@ -253,7 +292,7 @@ export const MainLayout: React.FC = () => {
                   backgroundColor: token.colorPrimary,
                   color: token.colorText,
                   border: `1px solid ${token.colorText}`,
-                  boxShadow: '1px 1px 0px 0px #262626',
+                  boxShadow: "1px 1px 0px 0px #262626",
                   borderRadius: 4,
                 }}
               >
@@ -268,9 +307,9 @@ export const MainLayout: React.FC = () => {
       <Content
         style={{
           maxWidth: 1160,
-          width: '100%',
-          margin: '0 auto',
-          padding: '32px 24px',
+          width: "100%",
+          margin: "0 auto",
+          padding: "32px 24px",
           flex: 1,
         }}
       >
@@ -280,16 +319,17 @@ export const MainLayout: React.FC = () => {
       {/* Footer */}
       <Footer
         style={{
-          textAlign: 'center',
+          textAlign: "center",
           backgroundColor: token.colorBgContainer,
           borderTop: `1px solid ${token.colorBorder}`,
-          padding: '20px 24px',
+          padding: "20px 24px",
           color: token.colorTextSecondary,
           fontSize: 13,
         }}
       >
         <Text type="secondary">
-          EDUTECH LMS © 2026. Editorial Broadsheet Design System & Ant Design Tokens.
+          EDUTECH LMS © 2026. Editorial Broadsheet Design System & Ant Design
+          Tokens.
         </Text>
       </Footer>
     </Layout>
