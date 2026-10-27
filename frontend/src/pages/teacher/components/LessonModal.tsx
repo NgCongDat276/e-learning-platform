@@ -531,7 +531,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({
             showIcon
             icon={<QuestionCircleOutlined />}
             message="Quiz Assessment Linked"
-            // description="This lesson will serve as a diagnostic check. You can configure question banks, time limits, and multiple-choice options under Module 6 (Quizzes & Question Bank)."
+            description="This lesson acts as a diagnostic assessment. After creating it, click the settings icon on the lesson card in the Curriculum Builder to configure question sourcing rules, time limits, and passing benchmarks."
             style={{ marginBottom: 20, borderRadius: 6 }}
           />
         )}

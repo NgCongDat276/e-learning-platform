@@ -5,12 +5,12 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   FileTextOutlined,
-  QuestionCircleOutlined,
 } from "@ant-design/icons";
 import type {
   ClassroomLesson,
   ClassroomChapter,
 } from "../../../types/enrollment.types";
+import { QuizEngine } from "./quizz_lesson";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -241,43 +241,14 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         </div>
       )}
 
-      {/* 4. Quiz Notice Card */}
+      {/* 4. Interactive Quiz Assessment Engine */}
       {lesson.lesson_type === "quiz" && (
-        <div
-          style={{
-            backgroundColor: token.colorBgContainer,
-            border: `1px solid ${token.colorBorder}`,
-            borderRadius: 8,
-            padding: "36px 32px",
-            textAlign: "center",
-            boxShadow: "1px 1px 0px 0px #262626",
-            marginBottom: 24,
-          }}
-        >
-          <QuestionCircleOutlined
-            style={{
-              fontSize: 44,
-              color: token.colorPrimary,
-              marginBottom: 14,
-            }}
-          />
-          <Title level={3} style={{ margin: "0 0 10px 0", fontSize: 22 }}>
-            Interactive Diagnostic Check
-          </Title>
-          <Paragraph
-            type="secondary"
-            style={{
-              maxWidth: 580,
-              margin: "0 auto",
-              fontSize: 14,
-              lineHeight: 1.6,
-            }}
-          >
-            This quiz lesson reinforces concepts covered in this chapter. The
-            automated assessment engine and timer will be activated under{" "}
-            <strong>Module 6 (Question Bank & Quizzes)</strong>.
-          </Paragraph>
-        </div>
+        <QuizEngine
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+          isLessonCompleted={lesson.is_completed}
+          onLessonPassed={onToggleComplete}
+        />
       )}
     </div>
   );
