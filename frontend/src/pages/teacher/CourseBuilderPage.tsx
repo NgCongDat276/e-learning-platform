@@ -28,6 +28,8 @@ import {
   BookOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  DatabaseOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useParams, Link } from 'react-router-dom';
 import { isAxiosError } from 'axios';
@@ -46,6 +48,8 @@ import type { Chapter } from '../../types/chapter.types';
 import type { Lesson } from '../../types/lesson.types';
 import { ChapterModal } from './components/ChapterModal';
 import { LessonModal } from './components/LessonModal';
+import { QuizConfigModal } from './components/QuizConfigModal';
+import { QuestionBankDrawer } from './components/QuestionBankDrawer';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -67,6 +71,16 @@ export const CourseBuilderPage: React.FC = () => {
   const [lessonToEdit, setLessonToEdit] = useState<Lesson | null>(null);
   const [activeChapterId, setActiveChapterId] = useState<string>('');
   const [activeChapterTitle, setActiveChapterTitle] = useState<string>('');
+
+  // Quiz & Question Bank state
+  const [questionBankDrawerOpen, setQuestionBankDrawerOpen] = useState<boolean>(false);
+  const [quizConfigModalOpen, setQuizConfigModalOpen] = useState<boolean>(false);
+  const [quizLessonToConfigure, setQuizLessonToConfigure] = useState<Lesson | null>(null);
+
+  const handleOpenQuizConfig = (lesson: Lesson) => {
+    setQuizLessonToConfigure(lesson);
+    setQuizConfigModalOpen(true);
+  };
 
   // Fetch course & chapters data
   const fetchData = useCallback(async () => {
@@ -352,23 +366,41 @@ export const CourseBuilderPage: React.FC = () => {
             </Paragraph>
           </div>
 
-          {/* Action: Add Chapter */}
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={handleOpenAddChapter}
-            style={{
-              backgroundColor: token.colorPrimary,
-              color: token.colorText,
-              border: `1px solid ${token.colorText}`,
-              borderRadius: 4,
-              fontWeight: 600,
-              boxShadow: '2px 2px 0px 0px #262626',
-            }}
-          >
-            Add Chapter
-          </Button>
+          {/* Actions: Question Banks & Add Chapter */}
+          <Space size="middle">
+            <Button
+              size="large"
+              icon={<DatabaseOutlined />}
+              onClick={() => setQuestionBankDrawerOpen(true)}
+              style={{
+                backgroundColor: token.colorBgContainer,
+                color: token.colorText,
+                border: `1px solid ${token.colorBorder}`,
+                borderRadius: 4,
+                fontWeight: 600,
+                boxShadow: '1px 1px 0px 0px #262626',
+              }}
+            >
+              Question Banks
+            </Button>
+
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleOpenAddChapter}
+              style={{
+                backgroundColor: token.colorPrimary,
+                color: token.colorText,
+                border: `1px solid ${token.colorText}`,
+                borderRadius: 4,
+                fontWeight: 600,
+                boxShadow: '2px 2px 0px 0px #262626',
+              }}
+            >
+              Add Chapter
+            </Button>
+          </Space>
         </div>
 
         {/* Stats Strip */}
@@ -690,6 +722,24 @@ export const CourseBuilderPage: React.FC = () => {
                                 />
                               </Tooltip>
 
+                              {lesson.lesson_type === 'quiz' && (
+                                <Tooltip title="Configure Quiz Rules & Time Limit">
+                                  <Button
+                                    size="small"
+                                    icon={<SettingOutlined />}
+                                    onClick={() =>
+                                      handleOpenQuizConfig(lesson as unknown as Lesson)
+                                    }
+                                    style={{
+                                      borderRadius: 4,
+                                      backgroundColor: '#eff6ff',
+                                      color: '#1d4ed8',
+                                      borderColor: '#bfdbfe',
+                                    }}
+                                  />
+                                </Tooltip>
+                              )}
+
                               <Tooltip title="Edit Lesson Details">
                                 <Button
                                   size="small"
@@ -748,6 +798,29 @@ export const CourseBuilderPage: React.FC = () => {
         chapterId={activeChapterId}
         chapterTitle={activeChapterTitle}
         lessonToEdit={lessonToEdit}
+      />
+
+      {/* Quiz Configuration Modal */}
+      {quizLessonToConfigure && (
+        <QuizConfigModal
+          open={quizConfigModalOpen}
+          onClose={() => {
+            setQuizConfigModalOpen(false);
+            setQuizLessonToConfigure(null);
+          }}
+          lessonId={quizLessonToConfigure.id}
+          lessonTitle={quizLessonToConfigure.title}
+          courseId={course?.id || courseId || ''}
+          onSuccess={() => void fetchData()}
+        />
+      )}
+
+      {/* Question Bank Drawer */}
+      <QuestionBankDrawer
+        open={questionBankDrawerOpen}
+        onClose={() => setQuestionBankDrawerOpen(false)}
+        courseId={course?.id || courseId || ''}
+        courseTitle={course?.title || ''}
       />
     </div>
   );

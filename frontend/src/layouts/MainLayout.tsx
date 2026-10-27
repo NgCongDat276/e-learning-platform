@@ -178,13 +178,22 @@ export const MainLayout: React.FC = () => {
           height: 64,
         }}
       >
-        <Space size="large" align="center">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 28,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           <Link
             to="/"
             style={{
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
+              flexShrink: 0,
             }}
           >
             <Space size="small" align="center">
@@ -216,15 +225,17 @@ export const MainLayout: React.FC = () => {
 
           <Menu
             mode="horizontal"
+            disabledOverflow={true}
             selectedKeys={[location.pathname]}
             items={navMenuItems}
             style={{
               borderBottom: "none",
               backgroundColor: "transparent",
-              minWidth: 380,
+              flex: 1,
+              minWidth: 0,
             }}
           />
-        </Space>
+        </div>
 
         {/* User Dropdown or Guest Auth Buttons */}
         {isAuthenticated && user ? (
