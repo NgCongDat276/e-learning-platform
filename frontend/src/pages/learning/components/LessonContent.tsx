@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Typography, Space, Button, Tag, theme } from "antd";
 import {
   CheckCircleFilled,
@@ -11,6 +11,7 @@ import type {
   ClassroomChapter,
 } from "../../../types/enrollment.types";
 import { QuizEngine } from "./quizz_lesson";
+import { LessonCommentsSection } from "./comments";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -30,6 +31,12 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   formatDuration,
 }) => {
   const { token } = theme.useToken();
+  const [takingQuizLessonId, setTakingQuizLessonId] = useState<string | null>(
+    null
+  );
+
+  const isTakingQuiz =
+    lesson.lesson_type === "quiz" && takingQuizLessonId === lesson.id;
 
   return (
     <div style={{ marginTop: 0 }}>
@@ -247,7 +254,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           >
             <Button
               type="primary"
-              // icon={<DownloadOutlined />}
               style={{
                 borderRadius: 4,
                 fontWeight: 700,
@@ -270,8 +276,14 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           lessonTitle={lesson.title}
           isLessonCompleted={lesson.is_completed}
           onLessonPassed={lesson.is_completed ? undefined : onToggleComplete}
+          onTakingStateChange={(taking) =>
+            setTakingQuizLessonId(taking ? lesson.id : null)
+          }
         />
       )}
+
+      {/* 5. Lesson Discussion & Q&A Section (Hidden during active quiz taking) */}
+      {!isTakingQuiz && <LessonCommentsSection lessonId={lesson.id} />}
     </div>
   );
 };
