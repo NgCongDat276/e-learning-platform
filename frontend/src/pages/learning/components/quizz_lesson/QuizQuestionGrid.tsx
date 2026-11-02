@@ -33,7 +33,7 @@ export const QuizQuestionGrid: React.FC<QuizQuestionGridProps> = ({
           marginBottom: 12,
         }}
       >
-        Question Navigation Grid
+        Question Navigation Grid ({totalQuestions} Questions)
       </Text>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

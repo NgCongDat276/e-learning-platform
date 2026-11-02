@@ -347,7 +347,7 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
           </div>
 
           {/* Question Rules Section */}
-          <Divider orientation="left" style={{ margin: '16px 0 20px 0' }}>
+          <Divider titlePlacement="start" style={{ margin: '16px 0 20px 0' }}>
             <Space size="small">
               <BookOutlined style={{ color: token.colorPrimary }} />
               <Text strong style={{ fontSize: 14 }}>

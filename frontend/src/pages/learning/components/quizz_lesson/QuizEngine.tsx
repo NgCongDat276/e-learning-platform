@@ -44,7 +44,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   const [reviewData, setReviewData] = useState<QuizAttemptReviewData | null>(null);
   const [loadingReview, setLoadingReview] = useState<boolean>(false);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSubmitRef = useRef<() => void>(() => {});
 
   // 1. Fetch initial quiz info & past attempts

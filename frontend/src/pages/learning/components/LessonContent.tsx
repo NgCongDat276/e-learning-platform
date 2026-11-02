@@ -107,31 +107,53 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           </Title>
         </div>
 
-        {/* Mark as completed toggle button */}
-        <Button
-          size="middle"
-          loading={togglingCompletion}
-          icon={
-            lesson.is_completed ? (
+        {/* Complete button for video/text, or Passed badge for quiz */}
+        {lesson.lesson_type === "quiz" ? (
+          lesson.is_completed ? (
+            <Tag
+              style={{
+                borderRadius: 4,
+                fontWeight: 600,
+                fontSize: 13,
+                padding: "6px 14px",
+                backgroundColor: "#dcfff1",
+                border: "1px solid #7ee2b8",
+                color: "#065f46",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
               <CheckCircleFilled style={{ color: "#059669" }} />
-            ) : (
-              <CheckCircleOutlined />
-            )
-          }
-          onClick={onToggleComplete}
-          style={{
-            borderRadius: 4,
-            fontWeight: 600,
-            backgroundColor: lesson.is_completed
-              ? "#dcfff1"
-              : token.colorBgContainer,
-            borderColor: lesson.is_completed ? "#7ee2b8" : token.colorBorder,
-            color: lesson.is_completed ? "#065f46" : token.colorText,
-            boxShadow: "1px 1px 0px 0px #262626",
-          }}
-        >
-          {lesson.is_completed ? "Completed" : "Mark As Completed"}
-        </Button>
+              Assessment Passed
+            </Tag>
+          ) : null
+        ) : (
+          <Button
+            size="middle"
+            loading={togglingCompletion}
+            icon={
+              lesson.is_completed ? (
+                <CheckCircleFilled style={{ color: "#059669" }} />
+              ) : (
+                <CheckCircleOutlined />
+              )
+            }
+            onClick={onToggleComplete}
+            style={{
+              borderRadius: 4,
+              fontWeight: 600,
+              backgroundColor: lesson.is_completed
+                ? "#dcfff1"
+                : token.colorBgContainer,
+              borderColor: lesson.is_completed ? "#7ee2b8" : token.colorBorder,
+              color: lesson.is_completed ? "#065f46" : token.colorText,
+              boxShadow: "1px 1px 0px 0px #262626",
+            }}
+          >
+            {lesson.is_completed ? "Completed" : "Mark As Completed"}
+          </Button>
+        )}
       </div>
 
       {/* 2. Reading Article / Text Notes Content */}
@@ -247,7 +269,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           lessonId={lesson.id}
           lessonTitle={lesson.title}
           isLessonCompleted={lesson.is_completed}
-          onLessonPassed={onToggleComplete}
+          onLessonPassed={lesson.is_completed ? undefined : onToggleComplete}
         />
       )}
     </div>

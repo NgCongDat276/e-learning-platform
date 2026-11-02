@@ -306,6 +306,17 @@ export class QuizzesService {
   ) {
     await this.verifyBankOwnership(bankId, userId, userRole);
 
+    const usedInAttempt = await prisma.quiz_attempt_questions.findFirst({
+      where: {
+        bank_questions: { bank_id: bankId },
+      },
+    });
+    if (usedInAttempt) {
+      throw new BadRequestError(
+        "Cannot delete question bank because some questions are referenced in student quiz attempts",
+      );
+    }
+
     await prisma.question_banks.delete({
       where: { id: bankId },
     });
@@ -469,6 +480,15 @@ export class QuizzesService {
     userRole: user_role,
   ) {
     await this.verifyQuestionOwnership(questionId, userId, userRole);
+
+    const usedInAttempt = await prisma.quiz_attempt_questions.findFirst({
+      where: { bank_question_id: questionId },
+    });
+    if (usedInAttempt) {
+      throw new BadRequestError(
+        "Cannot delete question because it is referenced in student quiz attempts",
+      );
+    }
 
     await prisma.bank_questions.delete({
       where: { id: questionId },
@@ -1007,7 +1027,15 @@ export class QuizzesService {
     const attempt = await prisma.quiz_attempts.findUnique({
       where: { id: attemptId },
       include: {
-        quizzes: true,
+        quizzes: {
+          include: {
+            lessons: {
+              include: {
+                chapters: true,
+              },
+            },
+          },
+        },
         quiz_attempt_questions: {
           include: {
             bank_questions: {
@@ -1051,7 +1079,15 @@ export class QuizzesService {
     const attempt = await prisma.quiz_attempts.findUnique({
       where: { id: attemptId },
       include: {
-        quizzes: true,
+        quizzes: {
+          include: {
+            lessons: {
+              include: {
+                chapters: true,
+              },
+            },
+          },
+        },
         quiz_attempt_questions: {
           include: {
             bank_questions: {
@@ -1191,6 +1227,35 @@ export class QuizzesService {
             is_completed: true,
           },
         });
+
+        // Kiểm tra xem đã hoàn thành 100% khóa học chưa để chuyển status enrollment sang completed
+        const courseId = attempt.quizzes.lessons.chapters.course_id;
+        const totalLessons = await tx.lessons.count({
+          where: {
+            chapters: { course_id: courseId },
+          },
+        });
+        const completedLessons = await tx.lesson_progress.count({
+          where: {
+            user_id: attempt.user_id,
+            is_completed: true,
+            lessons: {
+              chapters: { course_id: courseId },
+            },
+          },
+        });
+        if (totalLessons > 0 && completedLessons >= totalLessons) {
+          await tx.enrollments.updateMany({
+            where: {
+              user_id: attempt.user_id,
+              course_id: courseId,
+              status: enrollment_status.active,
+            },
+            data: {
+              status: enrollment_status.completed,
+            },
+          });
+        }
       }
     });
 

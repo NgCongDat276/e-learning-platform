@@ -1,5 +1,5 @@
 import prisma from "../../prisma";
-import { user_role, enrollment_status } from "@prisma/client";
+import { user_role, enrollment_status, lesson_type } from "@prisma/client";
 import {
   NotFoundError,
   ForbiddenError,
@@ -453,6 +453,12 @@ export class EnrollmentsService {
       throw new NotFoundError("Lesson not found");
     }
 
+    if (lesson.lesson_type === lesson_type.quiz) {
+      throw new BadRequestError(
+        "Quiz lessons cannot be completed manually. You must pass the quiz assessment.",
+      );
+    }
+
     const courseId = lesson.chapters.course_id;
 
     // Cập nhật hoặc tạo mới bản ghi tiến độ
@@ -531,6 +537,12 @@ export class EnrollmentsService {
 
     if (!lesson) {
       throw new NotFoundError("Lesson not found");
+    }
+
+    if (lesson.lesson_type === lesson_type.quiz) {
+      throw new BadRequestError(
+        "Quiz lessons cannot be completed manually. You must pass the quiz assessment.",
+      );
     }
 
     const courseId = lesson.chapters.course_id;
