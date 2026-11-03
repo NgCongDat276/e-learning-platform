@@ -11,6 +11,7 @@ export interface QuizEngineProps {
   lessonTitle: string;
   isLessonCompleted?: boolean;
   onLessonPassed?: () => void;
+  onTakingStateChange?: (isTaking: boolean) => void;
 }
 
 export type QuizViewMode = 'overview' | 'taking' | 'review';

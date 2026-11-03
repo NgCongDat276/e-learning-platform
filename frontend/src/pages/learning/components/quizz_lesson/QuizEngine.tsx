@@ -26,6 +26,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   lessonTitle,
   isLessonCompleted,
   onLessonPassed,
+  onTakingStateChange,
 }) => {
   // Primary states
   const [loading, setLoading] = useState<boolean>(true);
@@ -46,6 +47,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSubmitRef = useRef<() => void>(() => {});
+
+  // Notify parent when entering/leaving taking mode (to hide/show discussion section)
+  useEffect(() => {
+    onTakingStateChange?.(viewMode === 'taking');
+  }, [viewMode, onTakingStateChange]);
 
   // 1. Fetch initial quiz info & past attempts
   const refreshOverviewData = useCallback(async () => {
