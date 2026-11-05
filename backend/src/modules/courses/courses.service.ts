@@ -376,7 +376,7 @@ export class CoursesService {
         break;
     }
 
-    const [total, courses] = await Promise.all([
+    const [total, rawCourses] = await Promise.all([
       prisma.courses.count({ where }),
       prisma.courses.findMany({
         where,
@@ -394,6 +394,20 @@ export class CoursesService {
           status: true,
           created_at: true,
           updated_at: true,
+          chapters: {
+            select: {
+              lessons: {
+                select: {
+                  id: true,
+                  _count: {
+                    select: {
+                      comments: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           _count: {
             select: {
               enrollments: true,
@@ -403,6 +417,26 @@ export class CoursesService {
         },
       }),
     ]);
+
+    const courses = rawCourses.map(({ chapters, _count, ...rest }) => {
+      let lessonsCount = 0;
+      let commentsCount = 0;
+      for (const ch of chapters) {
+        lessonsCount += ch.lessons.length;
+        for (const l of ch.lessons) {
+          commentsCount += l._count.comments;
+        }
+      }
+
+      return {
+        ...rest,
+        _count: {
+          ..._count,
+          lessons: lessonsCount,
+          comments: commentsCount,
+        },
+      };
+    });
 
     return {
       courses,

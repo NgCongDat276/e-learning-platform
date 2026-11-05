@@ -18,6 +18,8 @@ export interface CourseLecturer {
 export interface CourseCount {
   enrollments?: number;
   chapters?: number;
+  lessons?: number;
+  comments?: number;
 }
 
 export interface LessonSummary {

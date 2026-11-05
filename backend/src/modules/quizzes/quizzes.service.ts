@@ -1511,6 +1511,243 @@ export class QuizzesService {
       },
     };
   }
+
+  /**
+   * Giảng viên / Admin xem thống kê chuyên sâu của 1 bài Quiz:
+   * - Chỉ số tổng hợp (Điểm TB, Cao nhất, Thấp nhất, Tỷ lệ Đạt, Thời gian làm TB)
+   * - Phân tích các câu hỏi học viên hay làm sai nhất (Hardest Questions)
+   * - Danh sách toàn bộ lịch sử làm bài của học viên
+   */
+  async getLessonQuizAnalyticsForTeacher(
+    lessonId: string,
+    userId: string,
+    userRole: user_role,
+  ) {
+    const lesson = await prisma.lessons.findUnique({
+      where: { id: lessonId },
+      include: {
+        chapters: {
+          include: {
+            courses: {
+              select: { id: true, lecturer_id: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundError("Lesson not found");
+    }
+
+    if (
+      userRole !== user_role.admin &&
+      lesson.chapters.courses.lecturer_id !== userId
+    ) {
+      throw new ForbiddenError(
+        "You do not have permission to view quiz analytics for this course",
+      );
+    }
+
+    const quiz = await prisma.quizzes.findFirst({
+      where: { lesson_id: lessonId },
+      include: {
+        quiz_question_rules: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!quiz) {
+      return {
+        is_configured: false,
+        summary: null,
+        hardest_questions: [],
+        attempts: [],
+      };
+    }
+
+    const allAttempts = await prisma.quiz_attempts.findMany({
+      where: { quiz_id: quiz.id },
+      include: {
+        users: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+            avatar_url: true,
+          },
+        },
+        quiz_attempt_questions: {
+          include: {
+            quiz_attempt_answers: true,
+            bank_questions: {
+              select: {
+                id: true,
+                topic: true,
+                difficulty: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ submitted_at: "desc" }, { started_at: "desc" }],
+    });
+
+    const submittedAttempts = allAttempts.filter(
+      (a) => a.status === "submitted",
+    );
+
+    const uniqueStudentIds = new Set(submittedAttempts.map((a) => a.user_id));
+    const passedStudentIds = new Set(
+      submittedAttempts.filter((a) => a.is_passed).map((a) => a.user_id),
+    );
+
+    let avgScore: number | null = null;
+    let highestScore: number | null = null;
+    let lowestScore: number | null = null;
+    let avgDurationSeconds: number | null = null;
+
+    if (submittedAttempts.length > 0) {
+      const scores = submittedAttempts.map((a) => a.score);
+      avgScore = Math.round(
+        scores.reduce((acc, s) => acc + s, 0) / scores.length,
+      );
+      highestScore = Math.max(...scores);
+      lowestScore = Math.min(...scores);
+
+      const durations: number[] = [];
+      for (const att of submittedAttempts) {
+        if (att.started_at && att.submitted_at) {
+          const diffSecs = Math.max(
+            1,
+            Math.round(
+              (att.submitted_at.getTime() - att.started_at.getTime()) / 1000,
+            ),
+          );
+          durations.push(diffSecs);
+        }
+      }
+      if (durations.length > 0) {
+        avgDurationSeconds = Math.round(
+          durations.reduce((acc, d) => acc + d, 0) / durations.length,
+        );
+      }
+    }
+
+    const uniqueStudents = uniqueStudentIds.size;
+    const passedStudents = passedStudentIds.size;
+    const passRate =
+      uniqueStudents > 0
+        ? Math.round((passedStudents / uniqueStudents) * 100)
+        : null;
+
+    // Phân tích độ khó thực tế của từng câu hỏi dựa trên câu trả lời của học viên
+    const questionStatsMap = new Map<
+      string,
+      {
+        bank_question_id: string;
+        content: string;
+        question_type: string;
+        topic: string;
+        difficulty: string;
+        total_answered: number;
+        correct_count: number;
+      }
+    >();
+
+    for (const att of submittedAttempts) {
+      for (const aq of att.quiz_attempt_questions) {
+        const existing = questionStatsMap.get(aq.bank_question_id) || {
+          bank_question_id: aq.bank_question_id,
+          content: aq.content_snapshot,
+          question_type: aq.question_type_snapshot,
+          topic: aq.bank_questions?.topic || "General",
+          difficulty: aq.bank_questions?.difficulty || "easy",
+          total_answered: 0,
+          correct_count: 0,
+        };
+
+        existing.total_answered += 1;
+        if (aq.quiz_attempt_answers?.is_correct) {
+          existing.correct_count += 1;
+        }
+
+        questionStatsMap.set(aq.bank_question_id, existing);
+      }
+    }
+
+    const hardestQuestions = Array.from(questionStatsMap.values())
+      .map((q) => {
+        const incorrectCount = q.total_answered - q.correct_count;
+        const correctRate =
+          q.total_answered > 0
+            ? Math.round((q.correct_count / q.total_answered) * 100)
+            : 0;
+        const incorrectRate = 100 - correctRate;
+
+        return {
+          ...q,
+          incorrect_count: incorrectCount,
+          correct_rate: correctRate,
+          incorrect_rate: incorrectRate,
+        };
+      })
+      .sort((a, b) => {
+        if (b.incorrect_rate !== a.incorrect_rate) {
+          return b.incorrect_rate - a.incorrect_rate;
+        }
+        return b.total_answered - a.total_answered;
+      })
+      .slice(0, 6);
+
+    const attempts = allAttempts.map((att) => {
+      const durationSeconds =
+        att.started_at && att.submitted_at
+          ? Math.max(
+              1,
+              Math.round(
+                (att.submitted_at.getTime() - att.started_at.getTime()) / 1000,
+              ),
+            )
+          : null;
+
+      return {
+        id: att.id,
+        attempt_number: att.attempt_number,
+        status: att.status,
+        score: att.score,
+        is_passed: att.is_passed,
+        started_at: att.started_at,
+        submitted_at: att.submitted_at,
+        duration_seconds: durationSeconds,
+        user: att.users,
+      };
+    });
+
+    return {
+      is_configured: quiz.quiz_question_rules.length > 0,
+      summary: {
+        quiz_id: quiz.id,
+        quiz_title: quiz.title || lesson.title,
+        lesson_title: lesson.title,
+        passing_score: quiz.passing_score,
+        max_attempts: quiz.max_attempts,
+        time_limit_minutes: quiz.time_limit_minutes,
+        total_attempts: allAttempts.length,
+        submitted_attempts: submittedAttempts.length,
+        unique_students: uniqueStudents,
+        passed_students: passedStudents,
+        avg_score: avgScore,
+        highest_score: highestScore,
+        lowest_score: lowestScore,
+        pass_rate: passRate,
+        avg_duration_seconds: avgDurationSeconds,
+      },
+      hardest_questions: hardestQuestions,
+      attempts,
+    };
+  }
 }
 
 export const quizzesService = new QuizzesService();

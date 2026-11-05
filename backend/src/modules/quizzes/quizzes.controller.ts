@@ -260,6 +260,29 @@ export class QuizzesController {
       data.pagination,
     );
   }
+
+  /**
+   * [GET] /quizzes/lessons/:lessonId/analytics (Lecturer / Admin)
+   */
+  async getLessonQuizAnalyticsForTeacher(
+    req: Request,
+    res: Response,
+  ): Promise<Response> {
+    const lessonId = req.params.lessonId as string;
+
+    const data = await quizzesService.getLessonQuizAnalyticsForTeacher(
+      lessonId,
+      req.user!.id,
+      req.user!.role as user_role,
+    );
+
+    return sendSuccess(
+      res,
+      data,
+      "Quiz analytics retrieved successfully",
+      200,
+    );
+  }
 }
 
 export const quizzesController = new QuizzesController();

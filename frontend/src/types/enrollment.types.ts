@@ -86,6 +86,59 @@ export interface ClassroomData {
   };
 }
 
+export interface LessonQuizMetricsSummary {
+  quizId: string | null;
+  isConfigured: boolean;
+  passingScore: number;
+  maxAttempts: number;
+  totalAttempts: number;
+  uniqueStudentsAttempted: number;
+  passedStudentsCount: number;
+  avgScore: number | null;
+  highestScore: number | null;
+  lowestScore: number | null;
+  passRate: number | null;
+}
+
+export interface LessonAnalyticsItem {
+  id: string;
+  title: string;
+  lesson_type: LessonType;
+  duration_seconds: number;
+  order_index: number;
+  viewedStudentsCount: number;
+  completedStudentsCount: number;
+  completionRate: number;
+  avgWatchSeconds: number;
+  avgWatchPercent: number;
+  commentsCount: number;
+  quizMetrics: LessonQuizMetricsSummary | null;
+}
+
+export interface ChapterAnalyticsItem {
+  id: string;
+  title: string;
+  order_index: number;
+  lessons: LessonAnalyticsItem[];
+}
+
+export interface StudentLessonBreakdownItem {
+  lessonId: string;
+  lessonTitle: string;
+  chapterId: string;
+  chapterTitle: string;
+  lessonType: LessonType;
+  orderIndex: number;
+  durationSeconds: number;
+  isCompleted: boolean;
+  lastWatchedPosition: number;
+  updatedAt: string | null;
+  quizBestScore: number | null;
+  quizAttemptsCount: number;
+  quizPassed: boolean;
+  quizPassingScore: number | null;
+}
+
 export interface CourseStudentItem {
   enrollmentId: string;
   student: {
@@ -100,6 +153,26 @@ export interface CourseStudentItem {
   totalLessons: number;
   progressPercent: number;
   lastActivityAt: string;
+  avgQuizScore?: number | null;
+  passedQuizzesCount?: number;
+  totalQuizzesCount?: number;
+  totalQuizAttempts?: number;
+  lessonBreakdown?: StudentLessonBreakdownItem[];
+}
+
+export interface CourseAnalyticsOverview {
+  totalStudents: number;
+  completedStudents: number;
+  inProgressStudents: number;
+  notStartedStudents: number;
+  avgCourseProgress: number;
+  totalChapters: number;
+  totalLessons: number;
+  totalQuizzes: number;
+  avgQuizScore: number | null;
+  quizPassRate: number | null;
+  totalQuizAttempts: number;
+  totalComments: number;
 }
 
 export interface CourseStudentsResult {
@@ -107,8 +180,12 @@ export interface CourseStudentsResult {
     id: string;
     title: string;
     slug: string;
+    status?: string;
+    level?: string;
   };
   totalStudents: number;
+  overview?: CourseAnalyticsOverview;
+  chapters?: ChapterAnalyticsItem[];
   students: CourseStudentItem[];
 }
 

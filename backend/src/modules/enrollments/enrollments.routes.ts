@@ -39,9 +39,9 @@ router.get(
   enrollmentsController.getClassroomData,
 );
 
-// [GET] /enrollments/courses/:courseId/students - Giảng viên xem danh sách học viên và tiến độ
+// [GET] /enrollments/courses/:courseId/students (hoặc /analytics) - Giảng viên xem thống kê bài học, quiz & tiến độ học viên
 router.get(
-  "/courses/:courseId/students",
+  ["/courses/:courseId/students", "/courses/:courseId/analytics"],
   authorize(user_role.lecturer, user_role.admin),
   validate({ params: courseIdentifierParamSchema }),
   enrollmentsController.getCourseStudents,
