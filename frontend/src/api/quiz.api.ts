@@ -11,6 +11,7 @@ import type {
   QuizReviewResponse,
   MyAttemptsResponse,
   TeacherAttemptsResponse,
+  TeacherQuizAnalyticsResponse,
   CreateQuestionBankRequest,
   UpdateQuestionBankRequest,
   CreateBankQuestionRequest,
@@ -251,5 +252,17 @@ export const getTeacherQuizAttemptsApi = async (
     `/quizzes/lessons/${lessonId}/attempts`,
     { params: { page, limit } }
   )) as unknown as TeacherAttemptsResponse;
+  return response;
+};
+
+/**
+ * Giảng viên / Admin xem phân tích chuyên sâu kết quả Quiz & Câu hỏi hay sai
+ */
+export const getTeacherQuizAnalyticsApi = async (
+  lessonId: string
+): Promise<TeacherQuizAnalyticsResponse> => {
+  const response = (await axiosClient.get(
+    `/quizzes/lessons/${lessonId}/analytics`
+  )) as unknown as TeacherQuizAnalyticsResponse;
   return response;
 };

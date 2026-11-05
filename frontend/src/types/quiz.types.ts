@@ -229,12 +229,51 @@ export interface TeacherAttemptItem {
   is_passed: boolean;
   started_at: string;
   submitted_at?: string;
+  duration_seconds?: number | null;
   user: {
     id: string;
     full_name: string;
     email: string;
     avatar_url?: string | null;
   };
+}
+
+export interface TeacherQuizAnalyticsSummary {
+  quiz_id: string;
+  quiz_title: string;
+  lesson_title: string;
+  passing_score: number;
+  max_attempts: number;
+  time_limit_minutes?: number | null;
+  total_attempts: number;
+  submitted_attempts: number;
+  unique_students: number;
+  passed_students: number;
+  avg_score: number | null;
+  highest_score: number | null;
+  lowest_score: number | null;
+  pass_rate: number | null;
+  avg_duration_seconds: number | null;
+}
+
+export interface HardestQuestionItem {
+  bank_question_id: string;
+  content: string;
+  question_type: string;
+  topic: string;
+  difficulty: string;
+  total_answered: number;
+  correct_count: number;
+  incorrect_count: number;
+  correct_rate: number;
+  incorrect_rate: number;
+}
+
+export interface TeacherQuizAnalyticsData {
+  is_configured: boolean;
+  summary: TeacherQuizAnalyticsSummary | null;
+  hardest_questions: HardestQuestionItem[];
+  attempts: TeacherAttemptItem[];
 }
 
 /**
@@ -250,3 +289,4 @@ export type SubmitQuizResponse = ApiResponse<SubmitQuizResultData>;
 export type QuizReviewResponse = ApiResponse<QuizAttemptReviewData>;
 export type MyAttemptsResponse = ApiResponse<MyAttemptItem[]>;
 export type TeacherAttemptsResponse = ApiResponse<TeacherAttemptItem[]>;
+export type TeacherQuizAnalyticsResponse = ApiResponse<TeacherQuizAnalyticsData>;

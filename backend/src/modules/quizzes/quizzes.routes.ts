@@ -148,6 +148,14 @@ router.get(
   quizzesController.getLessonAttemptsForTeacher,
 );
 
+// [GET] /quizzes/lessons/:lessonId/analytics - Phân tích chuyên sâu kết quả Quiz & Câu hỏi hay sai (Lecturer / Admin)
+router.get(
+  "/lessons/:lessonId/analytics",
+  authorize(user_role.lecturer, user_role.admin),
+  validate({ params: lessonIdParamSchema }),
+  quizzesController.getLessonQuizAnalyticsForTeacher,
+);
+
 // [GET] /quizzes/attempts/:attemptId (or /quiz-attempts/:attemptId)
 router.get(
   ["/attempts/:attemptId", "/quiz-attempts/:attemptId"],
