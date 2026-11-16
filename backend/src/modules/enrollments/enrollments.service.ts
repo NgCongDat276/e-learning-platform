@@ -300,6 +300,457 @@ export class EnrollmentsService {
   }
 
   /**
+   * 3.1 Lấy thống kê học tập tổng quan, Heatmap hoạt động và bài học tiếp tục (Student Learning Stats)
+   */
+  async getMyLearningStats(userId: string) {
+    const formatLocalDate = (date: Date): string => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
+
+    // 1. Tải song song danh sách khóa học đã ghi danh, toàn bộ tiến độ bài học và các lần nộp quiz
+    const [enrollments, allProgress, allQuizAttempts] = await Promise.all([
+      prisma.enrollments.findMany({
+        where: {
+          user_id: userId,
+          status: {
+            in: [enrollment_status.active, enrollment_status.completed],
+          },
+        },
+        orderBy: { enrolled_at: "desc" },
+        include: {
+          courses: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              thumbnail_url: true,
+              chapters: {
+                orderBy: { order_index: "asc" },
+                select: {
+                  id: true,
+                  title: true,
+                  order_index: true,
+                  lessons: {
+                    orderBy: { order_index: "asc" },
+                    select: {
+                      id: true,
+                      title: true,
+                      lesson_type: true,
+                      duration_seconds: true,
+                      order_index: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.lesson_progress.findMany({
+        where: { user_id: userId },
+        select: {
+          lesson_id: true,
+          is_completed: true,
+          last_watched_position: true,
+          updated_at: true,
+          lessons: {
+            select: {
+              id: true,
+              title: true,
+              lesson_type: true,
+              duration_seconds: true,
+              order_index: true,
+              chapter_id: true,
+              chapters: {
+                select: {
+                  id: true,
+                  title: true,
+                  order_index: true,
+                  course_id: true,
+                  courses: {
+                    select: {
+                      id: true,
+                      title: true,
+                      slug: true,
+                      thumbnail_url: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { updated_at: "desc" },
+      }),
+      prisma.quiz_attempts.findMany({
+        where: {
+          user_id: userId,
+          submitted_at: { not: null },
+        },
+        select: {
+          id: true,
+          quiz_id: true,
+          score: true,
+          is_passed: true,
+          started_at: true,
+          submitted_at: true,
+        },
+        orderBy: { submitted_at: "desc" },
+      }),
+    ]);
+
+    // 2. Tổng hợp danh sách bài học thuộc các khóa đã ghi danh
+    const enrolledCourseMap = new Map<string, (typeof enrollments)[0]["courses"]>();
+    const enrolledLessonIds = new Set<string>();
+    let totalEnrolledLessons = 0;
+
+    for (const enr of enrollments) {
+      const course = enr.courses;
+      enrolledCourseMap.set(course.id, course);
+      for (const chapter of course.chapters) {
+        for (const lesson of chapter.lessons) {
+          enrolledLessonIds.add(lesson.id);
+          totalEnrolledLessons++;
+        }
+      }
+    }
+
+    // Tiến độ các bài học thuộc các khóa đã ghi danh
+    const progressMap = new Map<string, (typeof allProgress)[0]>();
+    let completedLessonsCount = 0;
+    let videoWatchSeconds = 0;
+
+    for (const prog of allProgress) {
+      progressMap.set(prog.lesson_id, prog);
+      if (enrolledLessonIds.has(prog.lesson_id)) {
+        if (prog.is_completed) {
+          completedLessonsCount++;
+        }
+
+        const lessonDuration = prog.lessons?.duration_seconds || 0;
+        let watched = prog.last_watched_position || 0;
+
+        // Nếu bài học đã được đánh dấu hoàn thành, công nhận toàn bộ thời lượng bài học
+        if (prog.is_completed && lessonDuration > 0) {
+          watched = Math.max(watched, lessonDuration);
+        }
+
+        videoWatchSeconds += watched;
+      }
+    }
+
+    // Thời gian làm quiz (giây)
+    let quizTimeSeconds = 0;
+    for (const qa of allQuizAttempts) {
+      if (qa.started_at && qa.submitted_at) {
+        const diff = Math.floor(
+          (qa.submitted_at.getTime() - qa.started_at.getTime()) / 1000,
+        );
+        if (diff > 0 && diff < 14400) {
+          // Chỉ cộng nếu hợp lý dưới 4 tiếng
+          quizTimeSeconds += diff;
+        }
+      }
+    }
+
+    const totalWatchTimeSeconds = videoWatchSeconds + quizTimeSeconds;
+    const completionRate =
+      totalEnrolledLessons > 0
+        ? Math.round((completedLessonsCount / totalEnrolledLessons) * 100)
+        : 0;
+
+    // Thống kê Quiz
+    const totalQuizAttemptsCount = allQuizAttempts.length;
+    const averageQuizScore =
+      totalQuizAttemptsCount > 0
+        ? Math.round(
+            allQuizAttempts.reduce((sum, q) => sum + (q.score || 0), 0) /
+              totalQuizAttemptsCount,
+          )
+        : 0;
+
+    const passedQuizIds = new Set<string>();
+    const attemptedQuizIds = new Set<string>();
+    for (const q of allQuizAttempts) {
+      attemptedQuizIds.add(q.quiz_id);
+      if (q.is_passed) {
+        passedQuizIds.add(q.quiz_id);
+      }
+    }
+
+    // 3. Gom hoạt động theo từng ngày để tính Activity Heatmap & Streak
+    const activityMap = new Map<
+      string,
+      { lessonCount: number; quizCount: number }
+    >();
+
+    for (const prog of allProgress) {
+      if (prog.updated_at) {
+        const dateKey = formatLocalDate(new Date(prog.updated_at));
+        const item = activityMap.get(dateKey) || {
+          lessonCount: 0,
+          quizCount: 0,
+        };
+        item.lessonCount++;
+        activityMap.set(dateKey, item);
+      }
+    }
+
+    for (const qa of allQuizAttempts) {
+      if (qa.submitted_at) {
+        const dateKey = formatLocalDate(new Date(qa.submitted_at));
+        const item = activityMap.get(dateKey) || {
+          lessonCount: 0,
+          quizCount: 0,
+        };
+        item.quizCount++;
+        activityMap.set(dateKey, item);
+      }
+    }
+
+    // 4. Tính toán Streak (chuỗi ngày học liên tục)
+    const now = new Date();
+    const activeDatesSet = new Set<string>();
+    for (const [dateKey, counts] of activityMap.entries()) {
+      if (counts.lessonCount + counts.quizCount > 0) {
+        activeDatesSet.add(dateKey);
+      }
+    }
+
+    let streakDays = 0;
+    const cursor = new Date(now);
+    cursor.setHours(0, 0, 0, 0);
+
+    const todayStr = formatLocalDate(cursor);
+    const hasToday = activeDatesSet.has(todayStr);
+
+    if (!hasToday) {
+      // Nếu hôm nay chưa học, kiểm tra ngày hôm qua
+      cursor.setDate(cursor.getDate() - 1);
+      const yesterdayStr = formatLocalDate(cursor);
+      if (activeDatesSet.has(yesterdayStr)) {
+        while (activeDatesSet.has(formatLocalDate(cursor))) {
+          streakDays++;
+          cursor.setDate(cursor.getDate() - 1);
+        }
+      } else {
+        streakDays = 0;
+      }
+    } else {
+      // Hôm nay có học -> đếm lùi từ hôm nay
+      while (activeDatesSet.has(formatLocalDate(cursor))) {
+        streakDays++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    }
+
+    // 5. Tạo dữ liệu Heatmap cho 18 tuần gần nhất (~4 tháng)
+    const weeksCount = 18;
+    const dayOfWeek = now.getDay(); // 0: Sunday, 1: Monday, ...
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - (weeksCount * 7 + dayOfWeek));
+    startDate.setHours(0, 0, 0, 0);
+
+    const heatmapDays: Array<{
+      date: string;
+      count: number;
+      level: number;
+      lessonCount: number;
+      quizCount: number;
+    }> = [];
+
+    let totalActiveDays = 0;
+    let totalActivitiesInPeriod = 0;
+
+    const dayCursor = new Date(startDate);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    while (dayCursor <= todayEnd) {
+      const dStr = formatLocalDate(dayCursor);
+      const act = activityMap.get(dStr) || { lessonCount: 0, quizCount: 0 };
+      const count = act.lessonCount + act.quizCount;
+
+      let level = 0;
+      if (count >= 6) level = 4;
+      else if (count >= 4) level = 3;
+      else if (count >= 2) level = 2;
+      else if (count >= 1) level = 1;
+
+      if (count > 0) {
+        totalActiveDays++;
+        totalActivitiesInPeriod += count;
+      }
+
+      heatmapDays.push({
+        date: dStr,
+        count,
+        level,
+        lessonCount: act.lessonCount,
+        quizCount: act.quizCount,
+      });
+
+      dayCursor.setDate(dayCursor.getDate() + 1);
+    }
+
+    // 6. Xác định bài học gần nhất để tiếp tục (Quick Resume)
+    let lastLesson: {
+      courseId: string;
+      courseTitle: string;
+      courseSlug: string;
+      courseThumbnailUrl: string | null;
+      chapterId: string;
+      chapterTitle: string;
+      lessonId: string;
+      lessonTitle: string;
+      lessonType: string;
+      durationSeconds: number;
+      lastWatchedPosition: number;
+      isCompleted: boolean;
+      progressPercent: number;
+      updatedAt: string | null;
+      resumeUrl: string;
+      isNextLesson: boolean;
+    } | null = null;
+
+    // Tìm khóa học có hoạt động gần nhất
+    let latestEnrolledCourse: (typeof enrollments)[0]["courses"] | null = null;
+    let latestProgressItem: (typeof allProgress)[0] | null = null;
+
+    for (const prog of allProgress) {
+      const cId = prog.lessons?.chapters?.course_id;
+      if (cId && enrolledCourseMap.has(cId)) {
+        latestEnrolledCourse = enrolledCourseMap.get(cId)!;
+        latestProgressItem = prog;
+        break;
+      }
+    }
+
+    // Nếu chưa có tiến độ bài học nào, lấy khóa học được ghi danh đầu tiên
+    if (!latestEnrolledCourse && enrollments.length > 0) {
+      latestEnrolledCourse = enrollments[0].courses;
+    }
+
+    if (latestEnrolledCourse) {
+      // Thu thập tất cả bài học trong khóa học này theo thứ tự
+      const courseLessonsFlat: Array<{
+        id: string;
+        title: string;
+        lesson_type: string;
+        duration_seconds: number | null;
+        chapterId: string;
+        chapterTitle: string;
+      }> = [];
+
+      for (const ch of latestEnrolledCourse.chapters) {
+        for (const ls of ch.lessons) {
+          courseLessonsFlat.push({
+            id: ls.id,
+            title: ls.title,
+            lesson_type: ls.lesson_type,
+            duration_seconds: ls.duration_seconds,
+            chapterId: ch.id,
+            chapterTitle: ch.title,
+          });
+        }
+      }
+
+      // Đếm số bài đã xong trong khóa học này
+      const courseCompletedCount = courseLessonsFlat.filter(
+        (ls) => progressMap.get(ls.id)?.is_completed,
+      ).length;
+      const courseProgressPercent =
+        courseLessonsFlat.length > 0
+          ? Math.round(
+              (courseCompletedCount / courseLessonsFlat.length) * 100,
+            )
+          : 0;
+
+      // Xác định bài học gợi ý tiếp tục:
+      // Tìm bài học đầu tiên chưa hoàn thành
+      const nextUncompletedLesson = courseLessonsFlat.find(
+        (ls) => !progressMap.get(ls.id)?.is_completed,
+      );
+
+      if (nextUncompletedLesson) {
+        const prog = progressMap.get(nextUncompletedLesson.id);
+        lastLesson = {
+          courseId: latestEnrolledCourse.id,
+          courseTitle: latestEnrolledCourse.title,
+          courseSlug: latestEnrolledCourse.slug,
+          courseThumbnailUrl: latestEnrolledCourse.thumbnail_url,
+          chapterId: nextUncompletedLesson.chapterId,
+          chapterTitle: nextUncompletedLesson.chapterTitle,
+          lessonId: nextUncompletedLesson.id,
+          lessonTitle: nextUncompletedLesson.title,
+          lessonType: nextUncompletedLesson.lesson_type,
+          durationSeconds: nextUncompletedLesson.duration_seconds || 0,
+          lastWatchedPosition: prog?.last_watched_position || 0,
+          isCompleted: false,
+          progressPercent: courseProgressPercent,
+          updatedAt: prog?.updated_at ? prog.updated_at.toISOString() : null,
+          resumeUrl: `/courses/${latestEnrolledCourse.slug}/learn/${nextUncompletedLesson.id}`,
+          isNextLesson: Boolean(latestProgressItem?.is_completed),
+        };
+      } else if (courseLessonsFlat.length > 0) {
+        // Nếu đã hoàn thành tất cả các bài của khóa này, trỏ đến bài học cuối cùng
+        const lastFlat = courseLessonsFlat[courseLessonsFlat.length - 1];
+        const prog = progressMap.get(lastFlat.id);
+        lastLesson = {
+          courseId: latestEnrolledCourse.id,
+          courseTitle: latestEnrolledCourse.title,
+          courseSlug: latestEnrolledCourse.slug,
+          courseThumbnailUrl: latestEnrolledCourse.thumbnail_url,
+          chapterId: lastFlat.chapterId,
+          chapterTitle: lastFlat.chapterTitle,
+          lessonId: lastFlat.id,
+          lessonTitle: lastFlat.title,
+          lessonType: lastFlat.lesson_type,
+          durationSeconds: lastFlat.duration_seconds || 0,
+          lastWatchedPosition: prog?.last_watched_position || 0,
+          isCompleted: true,
+          progressPercent: 100,
+          updatedAt: prog?.updated_at ? prog.updated_at.toISOString() : null,
+          resumeUrl: `/courses/${latestEnrolledCourse.slug}/learn/${lastFlat.id}`,
+          isNextLesson: false,
+        };
+      }
+    }
+
+    return {
+      metrics: {
+        streakDays,
+        totalWatchTimeSeconds,
+        completedLessons: completedLessonsCount,
+        totalLessons: totalEnrolledLessons,
+        completionRate,
+        averageQuizScore,
+        quizzesPassed: passedQuizIds.size,
+        totalQuizzesAttempted: attemptedQuizIds.size,
+        totalEnrolledCourses: enrollments.length,
+        completedCourses: enrollments.filter(
+          (e) => e.status === enrollment_status.completed,
+        ).length,
+      },
+      heatmap: {
+        startDate: formatLocalDate(startDate),
+        endDate: formatLocalDate(now),
+        totalWeeks: weeksCount + 1,
+        totalDays: heatmapDays.length,
+        totalActiveDays,
+        totalActivities: totalActivitiesInPeriod,
+        days: heatmapDays,
+      },
+      recentActivity: {
+        lastLesson,
+      },
+    };
+  }
+
+  /**
    * 4. Lấy toàn bộ cây dữ liệu khóa học phục vụ Phòng học tập trung (Learning Classroom)
    */
   async getClassroomCourseData(
@@ -464,6 +915,8 @@ export class EnrollmentsService {
 
     const courseId = lesson.chapters.course_id;
 
+    const lessonDuration = lesson.duration_seconds || 0;
+
     // Cập nhật hoặc tạo mới bản ghi tiến độ
     await prisma.lesson_progress.upsert({
       where: {
@@ -476,9 +929,13 @@ export class EnrollmentsService {
         user_id: userId,
         lesson_id: lessonId,
         is_completed: true,
+        last_watched_position: lessonDuration,
       },
       update: {
         is_completed: true,
+        ...(lessonDuration > 0
+          ? { last_watched_position: lessonDuration }
+          : {}),
       },
     });
 
@@ -593,14 +1050,28 @@ export class EnrollmentsService {
     userId: string,
     lessonId: string,
     position: number,
+    durationSeconds?: number,
   ) {
     const lesson = await prisma.lessons.findUnique({
       where: { id: lessonId },
-      select: { id: true },
+      select: { id: true, duration_seconds: true, lesson_type: true },
     });
 
     if (!lesson) {
       throw new NotFoundError("Lesson not found");
+    }
+
+    // Tự động đồng bộ thời lượng thực tế của video vào bảng lessons nếu phát hiện video có duration chuẩn xác
+    if (
+      durationSeconds &&
+      durationSeconds > 0 &&
+      lesson.lesson_type === lesson_type.video &&
+      Math.abs((lesson.duration_seconds || 0) - durationSeconds) > 1
+    ) {
+      await prisma.lessons.update({
+        where: { id: lessonId },
+        data: { duration_seconds: durationSeconds },
+      });
     }
 
     await prisma.lesson_progress.upsert({
@@ -624,6 +1095,7 @@ export class EnrollmentsService {
       success: true,
       lessonId,
       last_watched_position: position,
+      duration_seconds: durationSeconds || lesson.duration_seconds,
     };
   }
 

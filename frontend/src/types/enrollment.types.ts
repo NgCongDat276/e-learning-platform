@@ -208,3 +208,67 @@ export type UncompleteLessonResponse = ApiResponse<{
   lessonId: string;
   is_completed: boolean;
 }>;
+
+// ==========================================
+// STUDENT LEARNING STATS & HEATMAP TYPES
+// ==========================================
+
+export interface StudentLearningMetrics {
+  streakDays: number;
+  totalWatchTimeSeconds: number;
+  completedLessons: number;
+  totalLessons: number;
+  completionRate: number;
+  averageQuizScore: number;
+  quizzesPassed: number;
+  totalQuizzesAttempted: number;
+  totalEnrolledCourses: number;
+  completedCourses: number;
+}
+
+export interface HeatmapDayItem {
+  date: string;
+  count: number;
+  level: number;
+  lessonCount: number;
+  quizCount: number;
+}
+
+export interface StudentHeatmapData {
+  startDate: string;
+  endDate: string;
+  totalWeeks: number;
+  totalDays: number;
+  totalActiveDays: number;
+  totalActivities: number;
+  days: HeatmapDayItem[];
+}
+
+export interface QuickResumeLastLesson {
+  courseId: string;
+  courseTitle: string;
+  courseSlug: string;
+  courseThumbnailUrl: string | null;
+  chapterId: string;
+  chapterTitle: string;
+  lessonId: string;
+  lessonTitle: string;
+  lessonType: string;
+  durationSeconds: number;
+  lastWatchedPosition: number;
+  isCompleted: boolean;
+  progressPercent: number;
+  updatedAt: string | null;
+  resumeUrl: string;
+  isNextLesson: boolean;
+}
+
+export interface StudentLearningStatsData {
+  metrics: StudentLearningMetrics;
+  heatmap: StudentHeatmapData;
+  recentActivity: {
+    lastLesson: QuickResumeLastLesson | null;
+  };
+}
+
+export type StudentLearningStatsResponse = ApiResponse<StudentLearningStatsData>;

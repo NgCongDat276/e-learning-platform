@@ -8,7 +8,7 @@ const { Title, Text } = Typography;
 interface VideoPlayerProps {
   lesson: ClassroomLesson;
   onEnded: () => void;
-  onSaveProgress: (position: number) => void;
+  onSaveProgress: (position: number, durationSeconds?: number) => void;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -19,13 +19,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastSavedTimeRef = useRef<number>(0);
 
-  // Khi tải xong metadata của video: tua tới last_watched_position
+  // Khi tải xong metadata của video: tua tới last_watched_position và tự động đồng bộ thời lượng video
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;
+    const duration = Math.round(videoRef.current.duration);
     const pos = lesson.last_watched_position || 0;
     if (pos > 0 && pos < videoRef.current.duration) {
       videoRef.current.currentTime = pos;
       lastSavedTimeRef.current = pos;
+    }
+
+    // Nếu thời lượng trong DB đang bị lệch so với độ dài thực của video, tự động đồng bộ ngay
+    if (duration > 0 && Math.abs((lesson.duration_seconds || 0) - duration) > 1) {
+      onSaveProgress(pos, duration);
     }
   };
 
@@ -33,9 +39,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
     const currentTime = videoRef.current.currentTime;
+    const duration = Math.round(videoRef.current.duration);
     if (Math.abs(currentTime - lastSavedTimeRef.current) >= 15) {
       lastSavedTimeRef.current = currentTime;
-      onSaveProgress(Math.floor(currentTime));
+      onSaveProgress(Math.floor(currentTime), duration);
     }
   };
 
@@ -43,8 +50,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handlePause = () => {
     if (!videoRef.current) return;
     const currentTime = videoRef.current.currentTime;
+    const duration = Math.round(videoRef.current.duration);
     lastSavedTimeRef.current = currentTime;
-    onSaveProgress(Math.floor(currentTime));
+    onSaveProgress(Math.floor(currentTime), duration);
   };
 
   if (!lesson.content_url) {

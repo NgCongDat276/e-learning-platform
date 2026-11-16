@@ -38,6 +38,18 @@ export class EnrollmentsController {
   }
 
   /**
+   * [GET] /enrollments/my-learning-stats - Thống kê học tập, streak, heatmap & bài học tiếp tục
+   */
+  async getMyLearningStats(req: Request, res: Response): Promise<Response> {
+    const result = await enrollmentsService.getMyLearningStats(req.user!.id);
+    return sendSuccess(
+      res,
+      result,
+      "My learning statistics retrieved successfully",
+    );
+  }
+
+  /**
    * [GET] /enrollments/courses/:courseId/classroom - Cây dữ liệu chương & bài học cho phòng học tập trung
    */
   async getClassroomData(req: Request, res: Response): Promise<Response> {
@@ -83,6 +95,7 @@ export class EnrollmentsController {
       req.user!.id,
       lessonId,
       req.body.last_watched_position,
+      req.body.duration_seconds,
     );
     return sendSuccess(res, result, "Lesson progress updated successfully");
   }

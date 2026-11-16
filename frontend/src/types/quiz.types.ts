@@ -37,6 +37,7 @@ export interface QuestionBank {
   description?: string | null;
   is_active: boolean;
   questions_count?: number;
+  topics?: string[];
   created_at?: string;
   updated_at?: string;
   bank_questions?: BankQuestion[];
@@ -157,6 +158,7 @@ export interface AttemptQuestion {
   content: string;
   question_type: QuestionType;
   points: number;
+  points_snapshot?: number;
   points_earned?: number;
   is_correct?: boolean;
   options: AttemptQuestionOption[];

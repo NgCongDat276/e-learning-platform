@@ -204,6 +204,9 @@ export class QuizzesService {
         _count: {
           select: { bank_questions: true },
         },
+        bank_questions: {
+          select: { topic: true },
+        },
       },
       orderBy: { created_at: "desc" },
     });
@@ -215,6 +218,9 @@ export class QuizzesService {
       description: bank.description,
       is_active: bank.is_active,
       questions_count: bank._count.bank_questions,
+      topics: Array.from(
+        new Set(bank.bank_questions.map((q) => q.topic).filter(Boolean)),
+      ),
       created_at: bank.created_at,
       updated_at: bank.updated_at,
     }));
@@ -689,6 +695,33 @@ export class QuizzesService {
 
       // Xử lý rules nếu có
       if (input.rules !== undefined) {
+        // Validate each rule: ensure bank has enough matching questions
+        for (const [index, rule] of input.rules.entries()) {
+          const whereClause: any = {
+            bank_id: rule.bank_id,
+          };
+          if (rule.difficulty) whereClause.difficulty = rule.difficulty;
+          if (rule.topic) whereClause.topic = rule.topic;
+
+          const availableCount = await tx.bank_questions.count({
+            where: whereClause,
+          });
+
+          if (availableCount < rule.question_count) {
+            const bank = await tx.question_banks.findUnique({
+              where: { id: rule.bank_id },
+              select: { title: true },
+            });
+            const bankTitle = bank?.title || "selected bank";
+            const diffText = rule.difficulty ? ` [${rule.difficulty}]` : "";
+            const topicText = rule.topic ? ` with topic "${rule.topic}"` : "";
+
+            throw new BadRequestError(
+              `Rule #${index + 1}: Question bank "${bankTitle}" only has ${availableCount} question(s)${topicText}${diffText}, but requires ${rule.question_count}.`,
+            );
+          }
+        }
+
         await tx.quiz_question_rules.deleteMany({
           where: { quiz_id: quizId },
         });
@@ -699,7 +732,7 @@ export class QuizzesService {
               quiz_id: quizId,
               bank_id: rule.bank_id,
               question_count: rule.question_count,
-              difficulty: rule.difficulty ?? difficulty.easy,
+              difficulty: rule.difficulty || null,
               topic: rule.topic || null,
               points_per_question: rule.points_per_question ?? 1,
             },

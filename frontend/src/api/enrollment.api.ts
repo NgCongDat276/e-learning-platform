@@ -7,6 +7,7 @@ import type {
   CourseStudentsResponse,
   CompleteLessonResponse,
   UncompleteLessonResponse,
+  StudentLearningStatsResponse,
 } from '../types/enrollment.types';
 import type { ApiResponse } from '../types/api';
 
@@ -85,15 +86,20 @@ export const uncompleteLessonApi = async (
  */
 export const updateLessonProgressApi = async (
   lessonId: string,
-  lastWatchedPosition: number
-): Promise<ApiResponse<{ success: boolean; lessonId: string; last_watched_position: number }>> => {
+  lastWatchedPosition: number,
+  durationSeconds?: number
+): Promise<ApiResponse<{ success: boolean; lessonId: string; last_watched_position: number; duration_seconds?: number }>> => {
   const response = (await axiosClient.patch(
     `/enrollments/lessons/${lessonId}/progress`,
-    { last_watched_position: lastWatchedPosition }
+    {
+      last_watched_position: lastWatchedPosition,
+      ...(durationSeconds ? { duration_seconds: durationSeconds } : {}),
+    }
   )) as unknown as ApiResponse<{
     success: boolean;
     lessonId: string;
     last_watched_position: number;
+    duration_seconds?: number;
   }>;
   return response;
 };
@@ -107,5 +113,15 @@ export const getCourseStudentsApi = async (
   const response = (await axiosClient.get(
     `/enrollments/courses/${courseIdOrSlug}/students`
   )) as unknown as CourseStudentsResponse;
+  return response;
+};
+
+/**
+ * 9. Lấy thống kê quá trình học tập, chuỗi streak, heatmap và bài học tiếp tục của học viên
+ */
+export const getMyLearningStatsApi = async (): Promise<StudentLearningStatsResponse> => {
+  const response = (await axiosClient.get(
+    '/enrollments/my-learning-stats'
+  )) as unknown as StudentLearningStatsResponse;
   return response;
 };

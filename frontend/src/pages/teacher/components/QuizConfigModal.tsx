@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
@@ -14,7 +14,7 @@ import {
   theme,
   message,
   Spin,
-} from 'antd';
+} from "antd";
 import {
   SettingOutlined,
   PlusOutlined,
@@ -22,17 +22,17 @@ import {
   SaveOutlined,
   BookOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
+} from "@ant-design/icons";
 import {
   getLessonQuizApi,
   upsertLessonQuizApi,
   getCourseQuestionBanksApi,
-} from '../../../api/quiz.api';
+} from "../../../api/quiz.api";
 import type {
   QuestionBank,
   QuizQuestionRule,
   UpsertQuizConfigRequest,
-} from '../../../types/quiz.types';
+} from "../../../types/quiz.types";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -80,7 +80,7 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
           const q = quizRes.data.quiz;
           form.setFieldsValue({
             title: q.title || lessonTitle,
-            description: q.description || '',
+            description: q.description || "",
             passing_score: q.passing_score ?? 60,
             time_limit_minutes: q.time_limit_minutes ?? 15,
             max_attempts: q.max_attempts ?? 1,
@@ -93,7 +93,7 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
                     bank_id: r.bank_id,
                     question_count: r.question_count,
                     difficulty: r.difficulty || undefined,
-                    topic: r.topic || '',
+                    topic: r.topic || undefined,
                     points_per_question: r.points_per_question ?? 1,
                   }))
                 : [],
@@ -102,7 +102,8 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
           // Default values for newly configured quiz
           form.setFieldsValue({
             title: lessonTitle,
-            description: 'Reinforce chapter concepts with this assessment check.',
+            description:
+              "Reinforce chapter concepts with this assessment check.",
             passing_score: 60,
             time_limit_minutes: 15,
             max_attempts: 1,
@@ -114,7 +115,8 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
         }
       })
       .catch(() => {
-        if (isMounted) message.error('Failed to load quiz settings or question banks');
+        if (isMounted)
+          message.error("Failed to load quiz settings or question banks");
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -129,6 +131,21 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      const rules: QuizQuestionRule[] = values.rules || [];
+
+      // Validate unique rules
+      const seen = new Set<string>();
+      for (const r of rules) {
+        const key = `${r.bank_id}_${r.difficulty || "any"}_${r.topic || "all"}`;
+        if (seen.has(key)) {
+          message.error(
+            "Duplicate rules detected! Please merge or use distinct topic/difficulty for the same bank.",
+          );
+          return;
+        }
+        seen.add(key);
+      }
+
       setSaving(true);
 
       const payload: UpsertQuizConfigRequest = {
@@ -140,28 +157,32 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
         shuffle_questions: values.shuffle_questions,
         shuffle_options: values.shuffle_options,
         show_correct_answers: values.show_correct_answers,
-        rules: (values.rules || []).map((r: QuizQuestionRule) => ({
+        rules: rules.map((r: QuizQuestionRule) => ({
           bank_id: r.bank_id,
           question_count: r.question_count,
           difficulty: r.difficulty || null,
-          topic: r.topic || null,
+          topic: r.topic?.trim() || null,
           points_per_question: r.points_per_question || 1,
         })),
       };
 
       const res = await upsertLessonQuizApi(lessonId, payload);
       if (res.success) {
-        message.success('Quiz assessment configuration saved successfully!');
+        message.success("Quiz assessment configuration saved successfully!");
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        message.error(res.message || 'Failed to save quiz configuration');
+        message.error(res.message || "Failed to save quiz configuration");
       }
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'errorFields' in err) {
+    } catch (err: any) {
+      if (err && typeof err === "object" && "errorFields" in err) {
         return; // validation error
       }
-      message.error('Error saving quiz settings');
+      const apiMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Error saving quiz settings";
+      message.error(apiMessage);
     } finally {
       setSaving(false);
     }
@@ -170,20 +191,20 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
   return (
     <Modal
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div
             style={{
               width: 32,
               height: 32,
               borderRadius: 4,
-              backgroundColor: '#eff6ff',
-              border: '1px solid #bfdbfe',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              backgroundColor: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <SettingOutlined style={{ color: '#2563eb', fontSize: 16 }} />
+            <SettingOutlined style={{ color: "#2563eb", fontSize: 16 }} />
           </div>
           <div>
             <Title level={4} style={{ margin: 0, fontSize: 17 }}>
@@ -212,9 +233,9 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
             borderRadius: 4,
             fontWeight: 700,
             backgroundColor: token.colorPrimary,
-            color: '#262626',
-            borderColor: '#262626',
-            boxShadow: 'var(--shadow-hard)',
+            color: "#262626",
+            borderColor: "#262626",
+            boxShadow: "var(--shadow-hard)",
           }}
         >
           Save Assessment Rules
@@ -223,7 +244,7 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
       destroyOnClose
     >
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
           <Spin size="large" />
           <Paragraph type="secondary" style={{ marginTop: 12 }}>
             Loading quiz configuration & banks...
@@ -235,12 +256,20 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
           <Form.Item
             name="title"
             label={<Text strong>Assessment Title</Text>}
-            rules={[{ required: true, message: 'Please enter assessment title' }]}
+            rules={[
+              { required: true, message: "Please enter assessment title" },
+            ]}
           >
-            <Input placeholder="e.g. Diagnostic JavaScript Mastery Check" style={{ borderRadius: 4 }} />
+            <Input
+              placeholder="e.g. Diagnostic JavaScript Mastery Check"
+              style={{ borderRadius: 4 }}
+            />
           </Form.Item>
 
-          <Form.Item name="description" label={<Text strong>Assessment Instructions / Overview</Text>}>
+          <Form.Item
+            name="description"
+            label={<Text strong>Assessment Instructions / Overview</Text>}
+          >
             <Input.TextArea
               rows={2}
               placeholder="Instructions shown to students before beginning..."
@@ -251,8 +280,8 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
           {/* Benchmark Metrics Row */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
               gap: 16,
               marginBottom: 16,
             }}
@@ -260,64 +289,104 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
             <Form.Item
               name="passing_score"
               label={<Text strong>Passing Score (%)</Text>}
-              rules={[{ required: true, message: 'Required' }]}
+              rules={[{ required: true, message: "Required" }]}
             >
-              <InputNumber min={1} max={100} style={{ width: '100%', borderRadius: 4 }} addonAfter="%" />
+              <InputNumber
+                min={1}
+                max={100}
+                style={{ width: "100%", borderRadius: 4 }}
+                addonAfter="%"
+              />
             </Form.Item>
 
             <Form.Item
               name="time_limit_minutes"
               label={
                 <Text strong>
-                  <ClockCircleOutlined style={{ marginRight: 4 }} /> Time Limit (Min)
+                  <ClockCircleOutlined style={{ marginRight: 4 }} /> Time Limit
+                  (Min)
                 </Text>
               }
-              extra={<Text type="secondary" style={{ fontSize: 11 }}>0 = Untimed</Text>}
+              extra={
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  0 = Untimed
+                </Text>
+              }
             >
-              <InputNumber min={0} max={300} style={{ width: '100%', borderRadius: 4 }} addonAfter="min" />
+              <InputNumber
+                min={0}
+                max={300}
+                style={{ width: "100%", borderRadius: 4 }}
+                addonAfter="min"
+              />
             </Form.Item>
 
             <Form.Item
               name="max_attempts"
               label={<Text strong>Allowed Attempts</Text>}
-              extra={<Text type="secondary" style={{ fontSize: 11 }}>0 = Unlimited</Text>}
+              extra={
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  0 = Unlimited
+                </Text>
+              }
             >
-              <InputNumber min={0} max={50} style={{ width: '100%', borderRadius: 4 }} />
+              <InputNumber
+                min={0}
+                max={50}
+                style={{ width: "100%", borderRadius: 4 }}
+              />
             </Form.Item>
           </div>
 
           {/* Behavior Toggles */}
           <div
             style={{
-              padding: '16px 20px',
+              padding: "16px 20px",
               backgroundColor: token.colorBgLayout,
               borderRadius: 6,
               border: `1px solid ${token.colorBorderSecondary}`,
-              display: 'flex',
-              flexDirection: 'column',
+              display: "flex",
+              flexDirection: "column",
               gap: 12,
               marginBottom: 20,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <div>
-                <Text strong style={{ display: 'block', fontSize: 14 }}>
+                <Text strong style={{ display: "block", fontSize: 14 }}>
                   Randomize Question Sequence
                 </Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Shuffle the order of questions for each student attempt to minimize plagiarism
+                  Shuffle the order of questions for each student attempt to
+                  minimize plagiarism
                 </Text>
               </div>
-              <Form.Item name="shuffle_questions" valuePropName="checked" noStyle>
+              <Form.Item
+                name="shuffle_questions"
+                valuePropName="checked"
+                noStyle
+              >
                 <Switch />
               </Form.Item>
             </div>
 
-            <Divider style={{ margin: '4px 0' }} />
+            <Divider style={{ margin: "4px 0" }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <div>
-                <Text strong style={{ display: 'block', fontSize: 14 }}>
+                <Text strong style={{ display: "block", fontSize: 14 }}>
                   Randomize Choice Options
                 </Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>
@@ -329,25 +398,36 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
               </Form.Item>
             </div>
 
-            <Divider style={{ margin: '4px 0' }} />
+            <Divider style={{ margin: "4px 0" }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <div>
-                <Text strong style={{ display: 'block', fontSize: 14 }}>
+                <Text strong style={{ display: "block", fontSize: 14 }}>
                   Reveal Correct Answers on Completion
                 </Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Allow students to review correct options and concept keys after submission
+                  Allow students to review correct options and concept keys
+                  after submission
                 </Text>
               </div>
-              <Form.Item name="show_correct_answers" valuePropName="checked" noStyle>
+              <Form.Item
+                name="show_correct_answers"
+                valuePropName="checked"
+                noStyle
+              >
                 <Switch />
               </Form.Item>
             </div>
           </div>
 
           {/* Question Rules Section */}
-          <Divider titlePlacement="start" style={{ margin: '16px 0 20px 0' }}>
+          <Divider titlePlacement="start" style={{ margin: "16px 0 20px 0" }}>
             <Space size="small">
               <BookOutlined style={{ color: token.colorPrimary }} />
               <Text strong style={{ fontSize: 14 }}>
@@ -359,27 +439,36 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
           {banks.length === 0 ? (
             <div
               style={{
-                padding: '20px',
-                textAlign: 'center',
-                backgroundColor: '#fffbeb',
-                border: '1px solid #fde68a',
+                padding: "20px",
+                textAlign: "center",
+                backgroundColor: "#fffbeb",
+                border: "1px solid #fde68a",
                 borderRadius: 6,
                 marginBottom: 16,
               }}
             >
-              <Text style={{ color: '#92400e', fontSize: 13, display: 'block', marginBottom: 6 }}>
+              <Text
+                style={{
+                  color: "#92400e",
+                  fontSize: 13,
+                  display: "block",
+                  marginBottom: 6,
+                }}
+              >
                 ⚠️ No Question Banks created for this course yet!
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Please create a Question Bank from the "Question Banks" button in the Curriculum
-                Builder header before binding specific rules.
+                Please create a Question Bank from the "Question Banks" button
+                in the Curriculum Builder header before binding specific rules.
               </Text>
             </div>
           ) : null}
 
           <Form.List name="rules">
             {(fields, { add, remove }) => (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 14 }}
+              >
                 {fields.map(({ key, name, ...restField }) => (
                   <Card
                     key={key}
@@ -408,65 +497,182 @@ export const QuizConfigModal: React.FC<QuizConfigModalProps> = ({
                   >
                     <div
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                        display: "flex",
+                        flexDirection: "column",
                         gap: 12,
                       }}
                     >
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'bank_id']}
-                        label={<Text style={{ fontSize: 12 }}>Target Bank</Text>}
-                        rules={[{ required: true, message: 'Bank required' }]}
-                        style={{ marginBottom: 0 }}
+                      {/* Row 1: Target Bank & Topic */}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1.2fr 1fr",
+                          gap: 12,
+                        }}
                       >
-                        <Select placeholder="Select bank" style={{ borderRadius: 4 }}>
-                          {banks.map((b) => (
-                            <Option key={b.id} value={b.id}>
-                              {b.title} ({b.questions_count || 0} Qs)
-                            </Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, "bank_id"]}
+                          label={
+                            <Text style={{ fontSize: 12 }}>Target Bank</Text>
+                          }
+                          rules={[{ required: true, message: "Bank required" }]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <Select
+                            placeholder="Select bank"
+                            style={{ borderRadius: 4 }}
+                            onChange={() => {
+                              form.setFieldValue(
+                                ["rules", name, "topic"],
+                                undefined,
+                              );
+                            }}
+                          >
+                            {banks.map((b) => (
+                              <Option key={b.id} value={b.id}>
+                                {b.title} ({b.questions_count || 0} Qs)
+                              </Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
 
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'question_count']}
-                        label={<Text style={{ fontSize: 12 }}>Pick Qs Count</Text>}
-                        rules={[{ required: true, message: 'Count required' }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <InputNumber min={1} max={50} style={{ width: '100%', borderRadius: 4 }} />
-                      </Form.Item>
+                        <Form.Item
+                          noStyle
+                          shouldUpdate={(prev, cur) =>
+                            prev.rules?.[name]?.bank_id !==
+                            cur.rules?.[name]?.bank_id
+                          }
+                        >
+                          {({ getFieldValue }) => {
+                            const currentBankId = getFieldValue([
+                              "rules",
+                              name,
+                              "bank_id",
+                            ]);
+                            const selectedBank = banks.find(
+                              (b) => b.id === currentBankId,
+                            );
+                            const bankTopics = selectedBank?.topics || [];
 
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'difficulty']}
-                        label={<Text style={{ fontSize: 12 }}>Difficulty</Text>}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Select placeholder="Any Level" allowClear style={{ borderRadius: 4 }}>
-                          <Option value="easy">Easy</Option>
-                          <Option value="medium">Medium</Option>
-                          <Option value="hard">Hard</Option>
-                        </Select>
-                      </Form.Item>
+                            return (
+                              <Form.Item
+                                {...restField}
+                                name={[name, "topic"]}
+                                label={
+                                  <Space size={4}>
+                                    <Text style={{ fontSize: 12 }}>
+                                      Topic / Category
+                                    </Text>
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: 11 }}
+                                    >
+                                      (Optional)
+                                    </Text>
+                                  </Space>
+                                }
+                                style={{ marginBottom: 0 }}
+                              >
+                                <Select
+                                  placeholder={
+                                    !currentBankId
+                                      ? "Select bank first"
+                                      : bankTopics.length === 0
+                                        ? "All Topics (No tags in bank)"
+                                        : "All Topics (or select topic)"
+                                  }
+                                  allowClear
+                                  showSearch
+                                  disabled={!currentBankId}
+                                  style={{ borderRadius: 4 }}
+                                >
+                                  {bankTopics.map((t) => (
+                                    <Option key={t} value={t}>
+                                      {t}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+                            );
+                          }}
+                        </Form.Item>
+                      </div>
 
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'points_per_question']}
-                        label={<Text style={{ fontSize: 12 }}>Pts / Question</Text>}
-                        style={{ marginBottom: 0 }}
+                      {/* Row 2: Difficulty, Pick Qs Count, Pts / Question */}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr",
+                          gap: 12,
+                        }}
                       >
-                        <InputNumber min={1} max={100} style={{ width: '100%', borderRadius: 4 }} />
-                      </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, "difficulty"]}
+                          label={
+                            <Text style={{ fontSize: 12 }}>Difficulty</Text>
+                          }
+                          style={{ marginBottom: 0 }}
+                        >
+                          <Select
+                            placeholder="Any Level"
+                            allowClear
+                            style={{ borderRadius: 4 }}
+                          >
+                            <Option value="easy">Easy</Option>
+                            <Option value="medium">Medium</Option>
+                            <Option value="hard">Hard</Option>
+                          </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                          {...restField}
+                          name={[name, "question_count"]}
+                          label={
+                            <Text style={{ fontSize: 12 }}>Question Count</Text>
+                          }
+                          rules={[
+                            { required: true, message: "Count required" },
+                          ]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <InputNumber
+                            min={1}
+                            max={50}
+                            style={{ width: "100%", borderRadius: 4 }}
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          {...restField}
+                          name={[name, "points_per_question"]}
+                          label={
+                            <Text style={{ fontSize: 12 }}>Pts / Question</Text>
+                          }
+                          style={{ marginBottom: 0 }}
+                        >
+                          <InputNumber
+                            min={1}
+                            max={100}
+                            style={{ width: "100%", borderRadius: 4 }}
+                          />
+                        </Form.Item>
+                      </div>
                     </div>
                   </Card>
                 ))}
 
                 <Button
                   type="dashed"
-                  onClick={() => add({ question_count: 5, points_per_question: 1 })}
+                  onClick={() =>
+                    add({
+                      question_count: 5,
+                      points_per_question: 1,
+                      difficulty: undefined,
+                      topic: undefined,
+                    })
+                  }
                   icon={<PlusOutlined />}
                   disabled={banks.length === 0}
                   style={{

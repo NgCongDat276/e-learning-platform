@@ -18,6 +18,9 @@ router.use(authenticate);
 // [GET] /enrollments/my-courses - Danh sách khóa học học viên đã ghi danh
 router.get("/my-courses", enrollmentsController.getMyCourses);
 
+// [GET] /enrollments/my-learning-stats - Thống kê học tập, streak, heatmap & bài học tiếp tục
+router.get("/my-learning-stats", enrollmentsController.getMyLearningStats);
+
 // [POST] /enrollments/courses/:courseId/enroll - Ghi danh khóa học
 router.post(
   "/courses/:courseId/enroll",
