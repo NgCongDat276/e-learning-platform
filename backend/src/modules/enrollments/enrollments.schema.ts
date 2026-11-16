@@ -33,6 +33,11 @@ export const updateLessonProgressSchema = z.object({
     .number()
     .int("Last watched position must be an integer (seconds)")
     .min(0, "Position cannot be negative"),
+  duration_seconds: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .optional(),
 });
 
 export type UpdateLessonProgressInput = z.infer<

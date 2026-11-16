@@ -19,7 +19,6 @@ import {
   App,
 } from 'antd';
 import {
-  BookOutlined,
   PlayCircleOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
@@ -33,8 +32,19 @@ import {
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
-import { getMyEnrolledCoursesApi } from '../../api/enrollment.api';
-import type { MyEnrolledCourse } from '../../types/enrollment.types';
+import {
+  getMyEnrolledCoursesApi,
+  getMyLearningStatsApi,
+} from '../../api/enrollment.api';
+import type {
+  MyEnrolledCourse,
+  StudentLearningStatsData,
+} from '../../types/enrollment.types';
+import {
+  StudentMetricCards,
+  StudentActivityHeatmap,
+  StudentQuickResumeBanner,
+} from './components';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -53,30 +63,48 @@ export const MyCoursesPage: React.FC = () => {
 
   // Data states
   const [courses, setCourses] = useState<MyEnrolledCourse[]>([]);
+  const [learningStats, setLearningStats] = useState<StudentLearningStatsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [statsLoading, setStatsLoading] = useState<boolean>(true);
 
   // Filter & Search states
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'progress_desc' | 'alphabetical'>('recent');
 
-  // Fetch enrolled courses
-  const fetchMyCourses = useCallback(async () => {
+  // Fetch enrolled courses & learning statistics
+  const fetchPageData = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await getMyEnrolledCoursesApi();
-      if (res.success && res.data) {
-        setCourses(res.data);
-      }
-    } catch (err: unknown) {
-      if (isAxiosError(err)) {
-        message.error(err.response?.data?.message || 'Failed to load your enrolled courses');
-      } else {
-        message.error('An unexpected error occurred while loading your courses');
-      }
-    } finally {
-      setLoading(false);
-    }
+    setStatsLoading(true);
+
+    // Tải song song cả danh sách khóa học và số liệu thống kê học tập
+    const coursesPromise = getMyEnrolledCoursesApi()
+      .then((res) => {
+        if (res.success && res.data) {
+          setCourses(res.data);
+        }
+      })
+      .catch((err: unknown) => {
+        if (isAxiosError(err)) {
+          message.error(err.response?.data?.message || 'Failed to load your enrolled courses');
+        } else {
+          message.error('An unexpected error occurred while loading your courses');
+        }
+      })
+      .finally(() => setLoading(false));
+
+    const statsPromise = getMyLearningStatsApi()
+      .then((res) => {
+        if (res.success && res.data) {
+          setLearningStats(res.data);
+        }
+      })
+      .catch(() => {
+        // Silent fail hoặc fallback cho stats để không chặn load khóa học chính
+      })
+      .finally(() => setStatsLoading(false));
+
+    await Promise.allSettled([coursesPromise, statsPromise]);
   }, [message]);
 
   useEffect(() => {
@@ -84,14 +112,14 @@ export const MyCoursesPage: React.FC = () => {
     const load = async () => {
       await Promise.resolve();
       if (!ignore) {
-        await fetchMyCourses();
+        await fetchPageData();
       }
     };
     void load();
     return () => {
       ignore = true;
     };
-  }, [fetchMyCourses]);
+  }, [fetchPageData]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -238,165 +266,32 @@ export const MyCoursesPage: React.FC = () => {
             </Button>
             <Button
               icon={<ReloadOutlined />}
-              onClick={() => void fetchMyCourses()}
-              loading={loading}
+              onClick={() => void fetchPageData()}
+              loading={loading || statsLoading}
               style={{ borderRadius: 4 }}
             />
           </Space>
         </div>
 
-        {/* 2. Stats Metric Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>
-          <Col xs={12} sm={6}>
-            <Card
-              bordered
-              style={{
-                borderRadius: 6,
-                borderColor: token.colorBorder,
-                boxShadow: '1px 1px 0px 0px #262626',
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 6,
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <BookOutlined style={{ fontSize: 20, color: '#1d4ed8' }} />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                    Enrolled Courses
-                  </Text>
-                  <Title level={3} style={{ margin: 0, fontSize: 22, lineHeight: 1.2 }}>
-                    {loading ? '...' : stats.total}
-                  </Title>
-                </div>
-              </div>
-            </Card>
-          </Col>
+        {/* 2. Upgraded Metrics Cards (Streak, Study Time, Lessons, Quiz Score) */}
+        <StudentMetricCards
+          metrics={learningStats?.metrics}
+          loading={statsLoading}
+        />
 
-          <Col xs={12} sm={6}>
-            <Card
-              bordered
-              style={{
-                borderRadius: 6,
-                borderColor: token.colorBorder,
-                boxShadow: '1px 1px 0px 0px #262626',
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 6,
-                    backgroundColor: '#fef3c7',
-                    border: '1px solid #fde68a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ClockCircleOutlined style={{ fontSize: 20, color: '#b45309' }} />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                    In Progress
-                  </Text>
-                  <Title level={3} style={{ margin: 0, fontSize: 22, lineHeight: 1.2 }}>
-                    {loading ? '...' : stats.inProgress}
-                  </Title>
-                </div>
-              </div>
-            </Card>
-          </Col>
+        {/* 3. GitHub-style Activity Heatmap (100% width, ~4 months) */}
+        <StudentActivityHeatmap
+          heatmap={learningStats?.heatmap}
+          loading={statsLoading}
+        />
 
-          <Col xs={12} sm={6}>
-            <Card
-              bordered
-              style={{
-                borderRadius: 6,
-                borderColor: token.colorBorder,
-                boxShadow: '1px 1px 0px 0px #262626',
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 6,
-                    backgroundColor: '#dcfff1',
-                    border: '1px solid #7ee2b8',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <TrophyOutlined style={{ fontSize: 20, color: '#065f46' }} />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                    Completed
-                  </Text>
-                  <Title level={3} style={{ margin: 0, fontSize: 22, lineHeight: 1.2 }}>
-                    {loading ? '...' : stats.completed}
-                  </Title>
-                </div>
-              </div>
-            </Card>
-          </Col>
+        {/* 4. Quick Resume Banner (Continue learning last active lesson) */}
+        <StudentQuickResumeBanner
+          lastLesson={learningStats?.recentActivity.lastLesson}
+          loading={statsLoading}
+        />
 
-          <Col xs={12} sm={6}>
-            <Card
-              bordered
-              style={{
-                borderRadius: 6,
-                borderColor: token.colorBorder,
-                boxShadow: '1px 1px 0px 0px #262626',
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 6,
-                    backgroundColor: '#f3e8ff',
-                    border: '1px solid #e9d5ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CheckCircleFilled style={{ fontSize: 20, color: '#7e22ce' }} />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                    Lessons Done
-                  </Text>
-                  <Title level={3} style={{ margin: 0, fontSize: 22, lineHeight: 1.2 }}>
-                    {loading ? '...' : stats.totalLessonsMastered}
-                  </Title>
-                </div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* 3. Filter & Controls Toolbar */}
+        {/* 5. Filter & Controls Toolbar */}
         <div
           style={{
             backgroundColor: token.colorBgContainer,

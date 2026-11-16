@@ -135,10 +135,10 @@ export const LearningPage: React.FC = () => {
     };
   }, [classroomData, lessonId, slug, navigate]);
 
-  // Handle saving video playback position
-  const handleSaveProgress = (position: number) => {
+  // Handle saving video playback position and syncing duration
+  const handleSaveProgress = (position: number, durationSeconds?: number) => {
     if (!activeLesson) return;
-    void updateLessonProgressApi(activeLesson.id, position);
+    void updateLessonProgressApi(activeLesson.id, position, durationSeconds);
   };
 
   // Handle video ended: auto mark complete

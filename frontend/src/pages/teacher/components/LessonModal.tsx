@@ -11,6 +11,7 @@ import {
   Progress,
   Upload,
   Alert,
+  Tag,
   App,
   theme,
   Row,
@@ -72,12 +73,38 @@ export const LessonModal: React.FC<LessonModalProps> = ({
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [detectedVideoSeconds, setDetectedVideoSeconds] = useState<number | null>(null);
 
   const isEditing = !!lessonToEdit;
+
+  // Tự động phát hiện thời lượng video từ URL khi dán link
+  const extractDurationFromUrl = (url: string) => {
+    if (!url || !url.trim() || !url.startsWith('http')) return;
+    try {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = url.trim();
+      video.onloadedmetadata = () => {
+        const secs = Math.round(video.duration);
+        if (secs > 0) {
+          setDetectedVideoSeconds(secs);
+        }
+      };
+    } catch {
+      // Bỏ qua nếu URL không thể preload metadata
+    }
+  };
+
+  useEffect(() => {
+    if (selectedType === 'video' && contentUrl) {
+      extractDurationFromUrl(contentUrl);
+    }
+  }, [contentUrl, selectedType]);
 
   useEffect(() => {
     if (open) {
       if (lessonToEdit) {
+        setDetectedVideoSeconds(lessonToEdit.duration_seconds || null);
         form.setFieldsValue({
           title: lessonToEdit.title,
           lesson_type: lessonToEdit.lesson_type,
@@ -87,11 +114,15 @@ export const LessonModal: React.FC<LessonModalProps> = ({
             ? Math.ceil(lessonToEdit.duration_seconds / 60)
             : 0,
         });
+        if (lessonToEdit.content_url && lessonToEdit.lesson_type === 'video') {
+          extractDurationFromUrl(lessonToEdit.content_url);
+        }
       } else {
+        setDetectedVideoSeconds(null);
         form.resetFields();
         form.setFieldsValue({
           lesson_type: 'video',
-          duration_minutes: 10,
+          duration_minutes: 0,
         });
       }
     }
@@ -100,6 +131,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({
   const handleClose = () => {
     setUploadedFileName('');
     setUploadProgress(0);
+    setDetectedVideoSeconds(null);
     onClose();
   };
 
@@ -172,6 +204,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({
           URL.revokeObjectURL(videoElement.src);
           const durationSeconds = Math.round(videoElement.duration);
           if (durationSeconds > 0) {
+            setDetectedVideoSeconds(durationSeconds);
             form.setFieldsValue({
               duration_minutes: Math.ceil(durationSeconds / 60),
             });
@@ -219,9 +252,16 @@ export const LessonModal: React.FC<LessonModalProps> = ({
       const values = await form.validateFields();
       setSubmitting(true);
 
-      const durationSeconds = values.duration_minutes
-        ? Math.round(values.duration_minutes * 60)
-        : 0;
+      let durationSeconds = 0;
+      if (values.lesson_type === 'video') {
+        durationSeconds =
+          detectedVideoSeconds ||
+          (values.duration_minutes ? Math.round(values.duration_minutes * 60) : 0);
+      } else if (values.lesson_type === 'text') {
+        durationSeconds = values.duration_minutes
+          ? Math.round(values.duration_minutes * 60)
+          : 0;
+      }
 
       const payload = {
         title: values.title.trim(),
@@ -441,22 +481,45 @@ export const LessonModal: React.FC<LessonModalProps> = ({
               />
             </Form.Item>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label={<Text strong>Estimated Duration (Minutes)</Text>}
-                  name="duration_minutes"
-                  style={{ marginBottom: 0 }}
+            {/* Tự động hiển thị thời lượng video */}
+            <div
+              style={{
+                marginTop: 10,
+                padding: '10px 14px',
+                borderRadius: 6,
+                backgroundColor: detectedVideoSeconds ? '#f0fdf4' : '#f8fafc',
+                border: detectedVideoSeconds ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Space size={8}>
+                {detectedVideoSeconds ? (
+                  <CheckCircleFilled style={{ color: '#16a34a' }} />
+                ) : (
+                  <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
+                )}
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: detectedVideoSeconds ? 600 : 400,
+                    color: detectedVideoSeconds ? '#166534' : token.colorTextSecondary,
+                  }}
                 >
-                  <InputNumber
-                    min={0}
-                    step={1}
-                    prefix={<ClockCircleOutlined style={{ color: token.colorTextSecondary }} />}
-                    style={{ width: '100%', borderRadius: 4 }}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+                  {detectedVideoSeconds
+                    ? `Duration: ${Math.floor(detectedVideoSeconds / 60)}m ${
+                        detectedVideoSeconds % 60
+                      }s (Auto-detected from video)`
+                    : 'Duration is automatically detected from the video file or URL.'}
+                </Text>
+              </Space>
+              {detectedVideoSeconds ? (
+                <Tag color="success" style={{ borderRadius: 9999, fontWeight: 700, margin: 0 }}>
+                  {detectedVideoSeconds}s
+                </Tag>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -481,6 +544,24 @@ export const LessonModal: React.FC<LessonModalProps> = ({
                 style={{ borderRadius: 4 }}
               />
             </Form.Item>
+
+            <Row gutter={16} style={{ marginBottom: 12 }}>
+              <Col span={12}>
+                <Form.Item
+                  label={<Text strong>Estimated Reading Time (Minutes)</Text>}
+                  name="duration_minutes"
+                  style={{ marginBottom: 0 }}
+                >
+                  <InputNumber
+                    min={0}
+                    step={1}
+                    prefix={<ClockCircleOutlined style={{ color: token.colorTextSecondary }} />}
+                    style={{ width: '100%', borderRadius: 4 }}
+                    placeholder="e.g. 5"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
             <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 6 }}>
               Optional PDF Attachment (Cloudflare R2)
