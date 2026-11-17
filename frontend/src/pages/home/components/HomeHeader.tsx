@@ -69,6 +69,11 @@ export const HomeHeader: React.FC = () => {
     ...(isAdmin
       ? [
           {
+            key: "admin-dashboard",
+            icon: <DashboardOutlined />,
+            label: <Link to="/admin/dashboard">Admin Dashboard</Link>,
+          },
+          {
             key: "admin-users",
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
