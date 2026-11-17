@@ -85,7 +85,13 @@ export const learningQualityQuerySchema = baseTimeRangeObject
   })
   .superRefine(validateTimeRange);
 
+export const courseRankingsQuerySchema = z.object({
+  minEnrollments: z.coerce.number().int().min(1).max(10000).default(20),
+  limit: z.coerce.number().int().min(1).max(20).default(5),
+});
+
 export type OverviewQueryInput = z.infer<typeof overviewQuerySchema>;
 export type CourseStatsQueryInput = z.infer<typeof courseStatsQuerySchema>;
 export type LecturerStatsQueryInput = z.infer<typeof lecturerStatsQuerySchema>;
 export type LearningQualityQueryInput = z.infer<typeof learningQualityQuerySchema>;
+export type CourseRankingsQueryInput = z.infer<typeof courseRankingsQuerySchema>;

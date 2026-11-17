@@ -3,6 +3,7 @@ import { adminStatsService } from "./admin-stats.service";
 import { sendSuccess } from "../../common/utils/api-response";
 import { HttpStatus } from "../../common/errors/http-status";
 import {
+  CourseRankingsQueryInput,
   CourseStatsQueryInput,
   LearningQualityQueryInput,
   LecturerStatsQueryInput,
@@ -56,6 +57,20 @@ export class AdminStatsController {
       "Learning quality statistics fetched successfully",
       HttpStatus.OK,
       result.pagination,
+    );
+  }
+
+  // [GET] /admin/stats/course-rankings - Top khóa học hoàn thành cao/thấp nhất
+  async getCourseCompletionRankings(
+    req: Request,
+    res: Response,
+  ): Promise<Response> {
+    const query = req.query as unknown as CourseRankingsQueryInput;
+    const data = await adminStatsService.getCourseCompletionRankings(query);
+    return sendSuccess(
+      res,
+      data,
+      "Course completion rankings fetched successfully",
     );
   }
 }

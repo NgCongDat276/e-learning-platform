@@ -175,6 +175,29 @@ export interface LearningQualityData {
   quizzes: QuizQualityItem[];
 }
 
+export interface CourseRankingsQuery {
+  minEnrollments?: number;
+  limit?: number;
+}
+
+export interface CourseCompletionRankItem {
+  id: string;
+  title: string;
+  slug: string;
+  lecturerName: string;
+  totalEnrollments: number;
+  completedEnrollments: number;
+  completionRate: number;
+}
+
+export interface CourseRankingsData {
+  minEnrollments: number;
+  limit: number;
+  totalEligibleCourses: number;
+  highest: CourseCompletionRankItem[];
+  lowest: CourseCompletionRankItem[];
+}
+
 export type AdminOverviewResponse = ApiResponse<AdminOverviewData>;
 export type CourseStatsResponse = ApiResponse<CourseStatsItem[]> & {
   pagination: PaginationMeta;
@@ -185,3 +208,4 @@ export type LecturerStatsResponse = ApiResponse<LecturerStatsItem[]> & {
 export type LearningQualityResponse = ApiResponse<LearningQualityData> & {
   pagination: PaginationMeta;
 };
+export type CourseRankingsResponse = ApiResponse<CourseRankingsData>;

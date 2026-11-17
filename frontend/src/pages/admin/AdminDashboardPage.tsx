@@ -19,6 +19,7 @@ import { SystemBreakdownCard } from './components/dashboard/SystemBreakdownCard'
 import { RecentPendingRequestsCard } from './components/dashboard/RecentPendingRequestsCard';
 import { CourseStatsTable } from './components/dashboard/CourseStatsTable';
 import { LecturerStatsTable } from './components/dashboard/LecturerStatsTable';
+import { CourseCompletionRankings } from './components/dashboard/CourseCompletionRankings';
 // import { LearningQualityTab } from './components/dashboard/LearningQualityTab';
 
 const { Title, Paragraph } = Typography;
@@ -78,6 +79,9 @@ export const AdminDashboardPage: React.FC = () => {
     void queryClient.invalidateQueries({ queryKey: ['admin-stats-courses'] });
     void queryClient.invalidateQueries({ queryKey: ['admin-stats-lecturers'] });
     void queryClient.invalidateQueries({
+      queryKey: ['admin-stats-course-rankings'],
+    });
+    void queryClient.invalidateQueries({
       queryKey: ['admin-stats-learning-quality'],
     });
   };
@@ -136,7 +140,12 @@ export const AdminDashboardPage: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Row 3: Recent Pending Requests */}
+      {/* Row 3: Course Completion Rankings */}
+      <div style={{ marginBottom: 20 }}>
+        <CourseCompletionRankings minEnrollments={10} limit={5} />
+      </div>
+
+      {/* Row 4: Recent Pending Requests */}
       <div style={{ marginBottom: 20 }}>
         <RecentPendingRequestsCard
           requests={overview?.recentPendingRequests}

@@ -1,6 +1,8 @@
 import axiosClient from './axios-client';
 import type {
   AdminOverviewResponse,
+  CourseRankingsQuery,
+  CourseRankingsResponse,
   CourseStatsQuery,
   CourseStatsResponse,
   LearningQualityQuery,
@@ -40,4 +42,12 @@ export const getAdminLearningQualityStatsApi = async (
   return (await axiosClient.get('/admin/stats/learning-quality', {
     params,
   })) as unknown as LearningQualityResponse;
+};
+
+export const getAdminCourseRankingsApi = async (
+  params?: CourseRankingsQuery
+): Promise<CourseRankingsResponse> => {
+  return (await axiosClient.get('/admin/stats/course-rankings', {
+    params,
+  })) as unknown as CourseRankingsResponse;
 };

@@ -4,6 +4,7 @@ import { authenticate } from "../../common/middlewares/authenticate";
 import { authorize } from "../../common/middlewares/authorize";
 import { validate } from "../../common/middlewares/validate";
 import {
+  courseRankingsQuerySchema,
   courseStatsQuerySchema,
   learningQualityQuerySchema,
   lecturerStatsQuerySchema,
@@ -37,6 +38,12 @@ router.get(
   "/learning-quality",
   validate({ query: learningQualityQuerySchema }),
   adminStatsController.getLearningQualityStats,
+);
+
+router.get(
+  "/course-rankings",
+  validate({ query: courseRankingsQuerySchema }),
+  adminStatsController.getCourseCompletionRankings,
 );
 
 export default router;

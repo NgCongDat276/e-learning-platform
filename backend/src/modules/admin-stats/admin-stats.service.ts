@@ -12,6 +12,7 @@ import prisma from "../../prisma";
 import { BadRequestError } from "../../common/errors/app-error";
 import { PaginationMeta } from "../../common/utils/api-response";
 import {
+  CourseRankingsQueryInput,
   CourseStatsQueryInput,
   LearningQualityQueryInput,
   LecturerStatsQueryInput,
@@ -863,6 +864,72 @@ export class AdminStatsService {
         averageScore: r.average_score,
       })),
       pagination: buildPagination(page, limit, totalQuizzes),
+    };
+  }
+
+  /**
+   * 5. [GET] /admin/stats/course-rankings
+   * Top khóa học có tỷ lệ hoàn thành cao nhất và thấp nhất (tối thiểu minEnrollments lượt đăng ký)
+   */
+  async getCourseCompletionRankings(query: CourseRankingsQueryInput) {
+    const { minEnrollments, limit } = query;
+
+    const rows = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        title: string;
+        slug: string;
+        lecturer_name: string;
+        total_enrollments: number;
+        completed_enrollments: number;
+        completion_rate: number;
+      }>
+    >`
+      SELECT
+        c.id,
+        c.title,
+        c.slug,
+        u.full_name AS lecturer_name,
+        COUNT(e.id) FILTER (WHERE e.status != 'cancelled')::int AS total_enrollments,
+        COUNT(e.id) FILTER (WHERE e.status = 'completed')::int AS completed_enrollments,
+        ROUND(
+          (COUNT(e.id) FILTER (WHERE e.status = 'completed')::numeric
+            / COUNT(e.id) FILTER (WHERE e.status != 'cancelled')) * 100,
+          1
+        )::float8 AS completion_rate
+      FROM courses c
+      JOIN users u ON u.id = c.lecturer_id
+      JOIN enrollments e ON e.course_id = c.id
+      WHERE c.status = 'published'
+      GROUP BY c.id, u.full_name
+      HAVING COUNT(e.id) FILTER (WHERE e.status != 'cancelled') >= ${minEnrollments}
+      ORDER BY completion_rate DESC, total_enrollments DESC
+    `;
+
+    const mapped = rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      slug: r.slug,
+      lecturerName: r.lecturer_name,
+      totalEnrollments: r.total_enrollments,
+      completedEnrollments: r.completed_enrollments,
+      completionRate: r.completion_rate,
+    }));
+
+    const highest = mapped.slice(0, limit);
+    const highestIds = new Set(highest.map((c) => c.id));
+
+    const lowest = [...mapped]
+      .reverse()
+      .filter((c) => !highestIds.has(c.id))
+      .slice(0, limit);
+
+    return {
+      minEnrollments,
+      limit,
+      totalEligibleCourses: mapped.length,
+      highest,
+      lowest,
     };
   }
 }
