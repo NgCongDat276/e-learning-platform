@@ -13,6 +13,7 @@ import lessonsRoutes from "./modules/lessons/lessons.routes";
 import enrollmentsRoutes from "./modules/enrollments/enrollments.routes";
 import quizzesRoutes from "./modules/quizzes/quizzes.routes";
 import commentsRoutes from "./modules/comments/comments.routes";
+import adminStatsRoutes from "./modules/admin-stats/admin-stats.routes";
 // Import các tiện ích và middleware từ common
 import { NotFoundError } from "./common/errors/app-error";
 import { errorHandler } from "./common/middlewares/error-handler";
@@ -78,6 +79,7 @@ app.use("/lessons", lessonsRoutes);
 app.use("/enrollments", enrollmentsRoutes);
 app.use("/quizzes", quizzesRoutes);
 app.use("/comments", commentsRoutes);
+app.use("/admin/stats", adminStatsRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(

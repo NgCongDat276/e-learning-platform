@@ -7,6 +7,7 @@ import { RegisterPage } from '../pages/auth/RegisterPage';
 import { HomePage } from '../pages/home/HomePage';
 import { ProfilePage } from '../pages/user/ProfilePage';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
+import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { TeacherCoursesPage } from '../pages/teacher/TeacherCoursesPage';
 import { CourseBuilderPage } from '../pages/teacher/CourseBuilderPage';
 import { CourseStudentsPage } from '../pages/teacher/CourseStudentsPage';
@@ -70,6 +71,7 @@ export const AppRoutes: React.FC = () => {
       {/* Protected Admin Routes */}
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route element={<MainLayout />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/users" element={<UserManagementPage />} />
         </Route>
       </Route>
