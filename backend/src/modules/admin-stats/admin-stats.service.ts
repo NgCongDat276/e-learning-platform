@@ -6,6 +6,7 @@ import {
   enrollment_status,
   lecturer_request_status,
   lesson_type,
+  order_status,
   user_role,
 } from "@prisma/client";
 import prisma from "../../prisma";
@@ -164,6 +165,8 @@ export class AdminStatsService {
       prevEnrollmentsInPeriod,
       revenueCurrentRows,
       revenuePrevRows,
+      actualRevenueCurrentAgg,
+      actualRevenuePrevAgg,
       pendingLecturerRequestsCount,
       pendingCommentsCount,
       trendRows,
@@ -225,6 +228,27 @@ export class AdminStatsService {
           AND e.enrolled_at < ${previousToTime}
           AND e.status != 'cancelled'
       `,
+      prisma.orders.aggregate({
+        where: {
+          status: order_status.paid,
+          paid_at: { gte: fromTime, lte: toTime },
+        },
+        _sum: {
+          gross_amount: true,
+          platform_fee_amount: true,
+          lecturer_net_amount: true,
+        },
+        _count: { _all: true },
+      }),
+      prisma.orders.aggregate({
+        where: {
+          status: order_status.paid,
+          paid_at: { gte: previousFromTime, lt: previousToTime },
+        },
+        _sum: {
+          gross_amount: true,
+        },
+      }),
       prisma.lecturer_requests.count({
         where: { status: lecturer_request_status.pending },
       }),
@@ -341,6 +365,16 @@ export class AdminStatsService {
     const paidCount = revenueCurrentRows[0]?.paid_count ?? 0;
     const revPrev = revenuePrevRows[0]?.total_revenue ?? 0;
 
+    const actualGrossCurr = Number(actualRevenueCurrentAgg._sum.gross_amount || 0);
+    const actualAdminProfitCurr = Number(
+      actualRevenueCurrentAgg._sum.platform_fee_amount || 0,
+    );
+    const actualLecturerNetCurr = Number(
+      actualRevenueCurrentAgg._sum.lecturer_net_amount || 0,
+    );
+    const actualPaidOrdersCurr = actualRevenueCurrentAgg._count._all;
+    const actualGrossPrev = Number(actualRevenuePrevAgg._sum.gross_amount || 0);
+
     return {
       range: {
         fromTime: fromTime.toISOString(),
@@ -380,6 +414,14 @@ export class AdminStatsService {
           prevInPeriod: revPrev,
           growthPercent: calcGrowthPercent(revCurr, revPrev),
           paidEnrollmentsInPeriod: paidCount,
+        },
+        actualRevenue: {
+          grossInPeriod: actualGrossCurr,
+          adminProfitInPeriod: actualAdminProfitCurr,
+          lecturerNetInPeriod: actualLecturerNetCurr,
+          prevGrossInPeriod: actualGrossPrev,
+          growthPercent: calcGrowthPercent(actualGrossCurr, actualGrossPrev),
+          paidOrdersInPeriod: actualPaidOrdersCurr,
         },
         pendingActions: {
           lecturerRequests: pendingLecturerRequestsCount,

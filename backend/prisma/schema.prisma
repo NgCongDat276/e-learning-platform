@@ -71,21 +71,23 @@ model comments {
 }
 
 model courses {
-  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title          String           @db.VarChar(255)
-  slug           String           @unique @db.VarChar(255)
-  description    String?
-  thumbnail_url  String?
-  price          Decimal?         @default(0.00) @db.Decimal(10, 2)
-  level          course_level?    @default(beginner)
-  status         course_status?   @default(draft)
-  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
-  lecturer_id    String           @db.Uuid
-  chapters       chapters[]
-  users          users            @relation(fields: [lecturer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  enrollments    enrollments[]
-  question_banks question_banks[]
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title             String           @db.VarChar(255)
+  slug              String           @unique @db.VarChar(255)
+  description       String?
+  thumbnail_url     String?
+  price             Decimal?         @default(0.00) @db.Decimal(10, 2)
+  platform_fee_rate Decimal?         @db.Decimal(5, 2)
+  level             course_level?    @default(beginner)
+  status            course_status?   @default(draft)
+  created_at        DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?        @default(now()) @db.Timestamptz(6)
+  lecturer_id       String           @db.Uuid
+  chapters          chapters[]
+  users             users            @relation(fields: [lecturer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  enrollments       enrollments[]
+  orders            orders[]
+  question_banks    question_banks[]
 
   @@index([lecturer_id], map: "idx_courses_lecturer_id")
   @@index([slug], map: "idx_courses_slug")
@@ -268,38 +270,164 @@ model quizzes {
 }
 
 model teacher_profile {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id      String    @unique @db.Uuid
-  degree       String?
-  certificates String?
-  cv_url       String?
-  expertise    String?
-  bio          String?
-  created_at   DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
-  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String    @unique @db.Uuid
+  degree              String?
+  certificates        String?
+  cv_url              String?
+  expertise           String?
+  bio                 String?
+  platform_fee_rate   Decimal?  @db.Decimal(5, 2)
+  bank_bin            String?   @db.VarChar(20)
+  bank_name           String?   @db.VarChar(100)
+  bank_account_number String?   @db.VarChar(50)
+  bank_account_name   String?   @db.VarChar(100)
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+  users               users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model users {
-  id                                                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                                                  String              @unique @db.VarChar(255)
-  password_hash                                          String              @db.VarChar(255)
-  full_name                                              String              @db.VarChar(100)
+  id                                                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                                                  String                @unique @db.VarChar(255)
+  password_hash                                          String                @db.VarChar(255)
+  full_name                                              String                @db.VarChar(100)
   avatar_url                                             String?
-  role                                                   user_role?          @default(student)
-  is_active                                              Boolean?            @default(true)
-  created_at                                             DateTime?           @default(now()) @db.Timestamptz(6)
-  updated_at                                             DateTime?           @default(now()) @db.Timestamptz(6)
+  role                                                   user_role?            @default(student)
+  is_active                                              Boolean?              @default(true)
+  created_at                                             DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at                                             DateTime?             @default(now()) @db.Timestamptz(6)
   comments                                               comments[]
   courses                                                courses[]
   enrollments                                            enrollments[]
-  lecturer_requests_lecturer_requests_reviewed_byTousers lecturer_requests[] @relation("lecturer_requests_reviewed_byTousers")
-  lecturer_requests_lecturer_requests_user_idTousers     lecturer_requests?  @relation("lecturer_requests_user_idTousers")
+  lecturer_requests_lecturer_requests_reviewed_byTousers lecturer_requests[]   @relation("lecturer_requests_reviewed_byTousers")
+  lecturer_requests_lecturer_requests_user_idTousers     lecturer_requests?    @relation("lecturer_requests_user_idTousers")
   lesson_progress                                        lesson_progress[]
   quiz_attempts                                          quiz_attempts[]
   teacher_profile                                        teacher_profile?
+  orders_buyer                                           orders[]              @relation("orders_buyer")
+  orders_lecturer                                        orders[]              @relation("orders_lecturer")
+  lecturer_wallet                                        lecturer_wallets?
+  wallet_transactions                                    wallet_transactions[]
+  payout_requests_lecturer                               payout_requests[]     @relation("payout_requests_lecturer")
+  payout_requests_reviewer                               payout_requests[]     @relation("payout_requests_reviewer")
+  platform_settings                                      platform_settings[]
 
   @@index([email], map: "idx_users_email")
+}
+
+model platform_settings {
+  key         String   @id @db.VarChar(100)
+  value       String   @db.VarChar(255)
+  description String?
+  updated_by  String?  @db.Uuid
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users?   @relation(fields: [updated_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+}
+
+model orders {
+  id                         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_code                 BigInt                @unique
+  user_id                    String                @db.Uuid
+  course_id                  String                @db.Uuid
+  lecturer_id                String                @db.Uuid
+  provider                   payment_provider      @default(payos)
+  gross_amount               Decimal               @db.Decimal(14, 2)
+  platform_fee_rate          Decimal               @db.Decimal(5, 2)
+  platform_fee_amount        Decimal               @db.Decimal(14, 2)
+  lecturer_net_amount        Decimal               @db.Decimal(14, 2)
+  commission_source          commission_source     @default(global)
+  status                     order_status          @default(pending)
+  payos_payment_link_id      String?               @db.VarChar(100)
+  payos_checkout_url         String?
+  payos_qr_code              String?
+  payos_bin                  String?               @db.VarChar(20)
+  payos_account_number       String?               @db.VarChar(50)
+  payos_account_name         String?               @db.VarChar(100)
+  payos_description          String?               @db.VarChar(50)
+  payos_reference            String?               @db.VarChar(100)
+  payos_transaction_datetime String?               @db.VarChar(50)
+  webhook_payload            Json?
+  expired_at                 DateTime              @db.Timestamptz(6)
+  paid_at                    DateTime?             @db.Timestamptz(6)
+  cancelled_at               DateTime?             @db.Timestamptz(6)
+  created_at                 DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime              @default(now()) @db.Timestamptz(6)
+  buyer                      users                 @relation("orders_buyer", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lecturer                   users                 @relation("orders_lecturer", fields: [lecturer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  courses                    courses               @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wallet_transactions        wallet_transactions[]
+
+  @@index([user_id, status], map: "idx_orders_user_status")
+  @@index([course_id, status], map: "idx_orders_course_status")
+  @@index([lecturer_id, status], map: "idx_orders_lecturer_status")
+  @@index([status, created_at], map: "idx_orders_status_created_at")
+}
+
+model lecturer_wallets {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lecturer_id            String                @unique @db.Uuid
+  total_gross_revenue    Decimal               @default(0) @db.Decimal(14, 2)
+  total_platform_fee     Decimal               @default(0) @db.Decimal(14, 2)
+  total_net_earned       Decimal               @default(0) @db.Decimal(14, 2)
+  available_balance      Decimal               @default(0) @db.Decimal(14, 2)
+  pending_payout_balance Decimal               @default(0) @db.Decimal(14, 2)
+  withdrawn_balance      Decimal               @default(0) @db.Decimal(14, 2)
+  updated_at             DateTime              @default(now()) @db.Timestamptz(6)
+  lecturer               users                 @relation(fields: [lecturer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  wallet_transactions    wallet_transactions[]
+  payout_requests        payout_requests[]
+}
+
+model wallet_transactions {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wallet_id         String           @db.Uuid
+  lecturer_id       String           @db.Uuid
+  type              wallet_tx_type
+  amount            Decimal          @db.Decimal(14, 2)
+  balance_before    Decimal          @db.Decimal(14, 2)
+  balance_after     Decimal          @db.Decimal(14, 2)
+  order_id          String?          @db.Uuid
+  payout_request_id String?          @db.Uuid
+  description       String
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  wallet            lecturer_wallets @relation(fields: [wallet_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lecturer          users            @relation(fields: [lecturer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order             orders?          @relation(fields: [order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  payout_request    payout_requests? @relation(fields: [payout_request_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([lecturer_id, created_at], map: "idx_wallet_tx_lecturer_created_at")
+  @@index([order_id], map: "idx_wallet_tx_order_id")
+  @@index([payout_request_id], map: "idx_wallet_tx_payout_request_id")
+}
+
+model payout_requests {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lecturer_id           String                @db.Uuid
+  wallet_id             String                @db.Uuid
+  amount                Decimal               @db.Decimal(14, 2)
+  status                payout_status         @default(pending)
+  bank_bin              String                @db.VarChar(20)
+  bank_name             String                @db.VarChar(100)
+  bank_account_number   String                @db.VarChar(50)
+  bank_account_name     String                @db.VarChar(100)
+  transfer_content      String                @db.VarChar(100)
+  lecturer_note         String?
+  admin_note            String?
+  transaction_reference String?               @db.VarChar(100)
+  proof_image_url       String?
+  reviewed_by           String?               @db.Uuid
+  reviewed_at           DateTime?             @db.Timestamptz(6)
+  completed_at          DateTime?             @db.Timestamptz(6)
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime              @default(now()) @db.Timestamptz(6)
+  lecturer              users                 @relation("payout_requests_lecturer", fields: [lecturer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer              users?                @relation("payout_requests_reviewer", fields: [reviewed_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  wallet                lecturer_wallets      @relation(fields: [wallet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wallet_transactions   wallet_transactions[]
+
+  @@index([lecturer_id, status], map: "idx_payout_requests_lecturer_status")
+  @@index([status, created_at], map: "idx_payout_requests_status_created_at")
 }
 
 enum comment_status {
@@ -353,4 +481,37 @@ enum user_role {
   student
   admin
   lecturer
+}
+
+enum payment_provider {
+  payos
+}
+
+enum order_status {
+  pending
+  paid
+  cancelled
+  expired
+  refunded
+}
+
+enum commission_source {
+  global
+  lecturer
+  course
+}
+
+enum payout_status {
+  pending
+  completed
+  rejected
+  cancelled
+}
+
+enum wallet_tx_type {
+  course_sale
+  payout_hold
+  payout_completed
+  payout_refund
+  adjustment
 }
