@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Row,
   Col,
@@ -16,7 +16,7 @@ import {
   Progress,
   theme,
   App,
-} from 'antd';
+} from "antd";
 import {
   PlayCircleOutlined,
   BookOutlined,
@@ -32,17 +32,18 @@ import {
   LoginOutlined,
   RightOutlined,
   CreditCardOutlined,
-} from '@ant-design/icons';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { isAxiosError } from 'axios';
-import { getCourseBySlugApi } from '../../api/course.api';
+} from "@ant-design/icons";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { isAxiosError } from "axios";
+import { getCourseBySlugApi } from "../../api/course.api";
 import {
   getEnrollmentStatusApi,
   enrollCourseApi,
-} from '../../api/enrollment.api';
-import type { CourseDetail } from '../../types/course.types';
-import type { EnrollmentStatusResult } from '../../types/enrollment.types';
-import { useAuth } from '../../context/useAuth';
+} from "../../api/enrollment.api";
+import { createPaymentOrderApi } from "../../api/payment.api";
+import type { CourseDetail } from "../../types/course.types";
+import type { EnrollmentStatusResult } from "../../types/enrollment.types";
+import { useAuth } from "../../context/useAuth";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -89,7 +90,7 @@ export const CourseDetailPage: React.FC = () => {
         if (isAxiosError(error) && error.response?.status === 404) {
           setNotFound(true);
         } else {
-          message.error('Failed to load course details');
+          message.error("Failed to load course details");
         }
       } finally {
         if (!ignore) {
@@ -141,28 +142,28 @@ export const CourseDetailPage: React.FC = () => {
   }, [slug, isAuthenticated]);
 
   const formatPrice = (price: number | string | undefined) => {
-    if (price === undefined || price === null || price === 0 || price === '0') {
-      return 'Free';
+    if (price === undefined || price === null || price === 0 || price === "0") {
+      return "Free";
     }
     const num = Number(price);
     if (isNaN(num)) return String(price);
-    return `${num.toLocaleString('vi-VN')} ₫`;
+    return `${num.toLocaleString("vi-VN")} ₫`;
   };
 
   const formatDuration = (totalSeconds: number | undefined) => {
-    if (!totalSeconds || totalSeconds <= 0) return 'Self-paced';
+    if (!totalSeconds || totalSeconds <= 0) return "Self-paced";
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     if (hours > 0) {
-      return `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`;
+      return `${hours}h ${minutes > 0 ? `${minutes}m` : ""}`;
     }
     return `${minutes} minutes`;
   };
 
   const handleEnrollClick = async () => {
     if (!isAuthenticated) {
-      message.info('Please sign in to enroll in this course');
-      navigate('/login', { state: { from: `/courses/${slug}` } });
+      message.info("Please sign in to enroll in this course");
+      navigate("/login", { state: { from: `/courses/${slug}` } });
       return;
     }
 
@@ -172,17 +173,30 @@ export const CourseDetailPage: React.FC = () => {
       navigate(
         targetLesson
           ? `/courses/${slug}/learn/${targetLesson}`
-          : `/courses/${slug}/learn`
+          : `/courses/${slug}/learn`,
       );
       return;
     }
 
-    // Nếu là khóa học có phí và chưa ghi danh -> Thông báo tính năng thanh toán đang phát triển
+    // Nếu là khóa học có phí và chưa ghi danh -> Tạo đơn hàng PayOS & chuyển sang Checkout
     const isPaidCourse = Number(course?.price || 0) > 0;
     if (!enrollmentStatus?.isEnrolled && isPaidCourse) {
-      message.info(
-        'Direct enrollment is currently open for free courses only. Paid checkout will be supported in the upcoming Payment module.'
-      );
+      if (!slug) return;
+      setEnrolling(true);
+      try {
+        const res = await createPaymentOrderApi(slug);
+        if (res.success && res.data) {
+          navigate(`/checkout/${res.data.orderCode}`);
+        }
+      } catch (error: unknown) {
+        if (isAxiosError(error) && error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error("Failed to create payment order. Please try again.");
+        }
+      } finally {
+        setEnrolling(false);
+      }
       return;
     }
 
@@ -192,17 +206,17 @@ export const CourseDetailPage: React.FC = () => {
     try {
       const res = await enrollCourseApi(slug);
       if (res.success && res.data) {
-        message.success('Successfully enrolled in course! Welcome aboard.');
+        message.success("Successfully enrolled in course! Welcome aboard.");
         setEnrollmentStatus({
           isEnrolled: true,
           isAuthor: false,
-          status: 'active',
+          status: "active",
           progressPercent: 0,
           completedLessons: 0,
           totalLessons:
             course?.chapters?.reduce(
               (acc, ch) => acc + (ch.lessons?.length || 0),
-              0
+              0,
             ) || 0,
           firstLessonId: res.data.firstLessonId,
         });
@@ -211,14 +225,14 @@ export const CourseDetailPage: React.FC = () => {
         navigate(
           targetLesson
             ? `/courses/${slug}/learn/${targetLesson}`
-            : `/courses/${slug}/learn`
+            : `/courses/${slug}/learn`,
         );
       }
     } catch (error: unknown) {
       if (isAxiosError(error) && error.response?.data?.message) {
         message.error(error.response.data.message);
       } else {
-        message.error('Failed to enroll in course. Please try again.');
+        message.error("Failed to enroll in course. Please try again.");
       }
     } finally {
       setEnrolling(false);
@@ -227,14 +241,14 @@ export const CourseDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px 0' }}>
+      <div style={{ padding: "24px 0" }}>
         <Skeleton active paragraph={{ rows: 2 }} />
         <Row gutter={[32, 32]} style={{ marginTop: 24 }}>
           <Col xs={24} lg={16}>
             <Skeleton active paragraph={{ rows: 8 }} />
           </Col>
           <Col xs={24} lg={8}>
-            <Skeleton.Node style={{ width: '100%', height: 320 }} active>
+            <Skeleton.Node style={{ width: "100%", height: 320 }} active>
               <div />
             </Skeleton.Node>
           </Col>
@@ -247,8 +261,8 @@ export const CourseDetailPage: React.FC = () => {
     return (
       <div
         style={{
-          padding: '80px 24px',
-          textAlign: 'center',
+          padding: "80px 24px",
+          textAlign: "center",
           backgroundColor: token.colorBgContainer,
           borderRadius: 8,
           border: `1px solid ${token.colorBorder}`,
@@ -261,7 +275,8 @@ export const CourseDetailPage: React.FC = () => {
                 Course Not Found
               </Text>
               <Text type="secondary">
-                The requested course slug might have been renamed, removed, or is still in draft mode.
+                The requested course slug might have been renamed, removed, or
+                is still in draft mode.
               </Text>
             </Space>
           }
@@ -286,7 +301,7 @@ export const CourseDetailPage: React.FC = () => {
     );
   }
 
-  const instructorName = course.users?.full_name || 'Verified Lecturer';
+  const instructorName = course.users?.full_name || "Verified Lecturer";
   const totalChapters = course.chapters?.length || 0;
   const totalLessons = course.summary?.totalLessons || 0;
   const totalDuration = formatDuration(course.summary?.totalDurationSeconds);
@@ -307,38 +322,38 @@ export const CourseDetailPage: React.FC = () => {
       {/* 2. Top Banner Header */}
       <div
         style={{
-          padding: '32px 36px',
+          padding: "32px 36px",
           backgroundColor: token.colorBgContainer,
           borderRadius: 8,
           border: `1px solid ${token.colorBorder}`,
-          boxShadow: '1px 1px 0px 0px #262626',
+          boxShadow: "1px 1px 0px 0px #262626",
           marginBottom: 32,
         }}
       >
         <Space size="middle" wrap style={{ marginBottom: 12 }}>
           <Tag
             style={{
-              textTransform: 'uppercase',
+              textTransform: "uppercase",
               fontWeight: 700,
               fontSize: 11,
               borderRadius: 9999,
-              backgroundColor: '#dcfff1',
-              color: '#065f46',
-              border: '1px solid #7ee2b8',
+              backgroundColor: "#dcfff1",
+              color: "#065f46",
+              border: "1px solid #7ee2b8",
             }}
           >
             {course.level}
           </Tag>
-          {course.status !== 'published' && (
+          {course.status !== "published" && (
             <Tag
               style={{
-                textTransform: 'uppercase',
+                textTransform: "uppercase",
                 fontWeight: 700,
                 fontSize: 11,
                 borderRadius: 9999,
-                backgroundColor: '#fef3c7',
-                color: '#b45309',
-                border: '1px solid #fde68a',
+                backgroundColor: "#fef3c7",
+                color: "#b45309",
+                border: "1px solid #fde68a",
               }}
             >
               Draft Preview
@@ -349,21 +364,36 @@ export const CourseDetailPage: React.FC = () => {
           </Text>
         </Space>
 
-        <Title level={1} style={{ fontSize: 32, letterSpacing: -0.8, margin: '0 0 14px 0' }}>
+        <Title
+          level={1}
+          style={{ fontSize: 32, letterSpacing: -0.8, margin: "0 0 14px 0" }}
+        >
           {course.title}
         </Title>
 
         <Paragraph
           type="secondary"
-          style={{ fontSize: 16, lineHeight: 1.6, maxWidth: 840, marginBottom: 20 }}
+          style={{
+            fontSize: 16,
+            lineHeight: 1.6,
+            maxWidth: 840,
+            marginBottom: 20,
+          }}
         >
           {course.description ||
-            'Comprehensive vertical curriculum with real-world stacks and architectural deep dives.'}
+            "Comprehensive vertical curriculum with real-world stacks and architectural deep dives."}
         </Paragraph>
 
         {/* Instructor and Stats Row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Avatar
               size={36}
               src={course.users?.avatar_url || undefined}
@@ -377,11 +407,14 @@ export const CourseDetailPage: React.FC = () => {
               {instructorName.charAt(0)}
             </Avatar>
             <div>
-              <Text strong style={{ fontSize: 14, display: 'block', lineHeight: 1.2 }}>
+              <Text
+                strong
+                style={{ fontSize: 14, display: "block", lineHeight: 1.2 }}
+              >
                 {instructorName}
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {course.users?.teacher_profile?.degree || 'Course Instructor'}
+                {course.users?.teacher_profile?.degree || "Course Instructor"}
               </Text>
             </div>
           </div>
@@ -404,7 +437,9 @@ export const CourseDetailPage: React.FC = () => {
             </Space>
 
             <Space size="small">
-              <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
+              <ClockCircleOutlined
+                style={{ color: token.colorTextSecondary }}
+              />
               <Text style={{ fontSize: 13 }}>
                 <Text strong>{totalDuration}</Text>
               </Text>
@@ -427,7 +462,7 @@ export const CourseDetailPage: React.FC = () => {
           {/* Syllabus Section */}
           <div
             style={{
-              padding: '24px 28px',
+              padding: "24px 28px",
               backgroundColor: token.colorBgContainer,
               borderRadius: 8,
               border: `1px solid ${token.colorBorder}`,
@@ -436,13 +471,16 @@ export const CourseDetailPage: React.FC = () => {
           >
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'baseline',
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
                 marginBottom: 20,
               }}
             >
-              <Title level={3} style={{ margin: 0, fontSize: 22, letterSpacing: -0.4 }}>
+              <Title
+                level={3}
+                style={{ margin: 0, fontSize: 22, letterSpacing: -0.4 }}
+              >
                 Curriculum Structure
               </Title>
               <Text type="secondary" style={{ fontSize: 13 }}>
@@ -459,13 +497,18 @@ export const CourseDetailPage: React.FC = () => {
               <Collapse
                 defaultActiveKey={course.chapters.map((c) => c.id)}
                 style={{
-                  backgroundColor: 'transparent',
+                  backgroundColor: "transparent",
                   border: `1px solid ${token.colorBorder}`,
                 }}
                 items={course.chapters.map((chapter, chIdx) => ({
                   key: chapter.id,
                   label: (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
                       <Text strong style={{ fontSize: 15 }}>
                         Chapter {chIdx + 1}: {chapter.title}
                       </Text>
@@ -475,30 +518,40 @@ export const CourseDetailPage: React.FC = () => {
                     </div>
                   ),
                   children: (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                      }}
+                    >
                       {chapter.lessons && chapter.lessons.length > 0 ? (
                         chapter.lessons.map((lesson, lIdx) => (
                           <div
                             key={lesson.id}
                             style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '10px 14px',
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "10px 14px",
                               borderRadius: 4,
                               backgroundColor: token.colorBgLayout,
                               border: `1px solid ${token.colorBorder}`,
                             }}
                           >
                             <Space size="middle">
-                              {lesson.lesson_type === 'quiz' ? (
+                              {lesson.lesson_type === "quiz" ? (
                                 <QuestionCircleOutlined
                                   style={{ color: token.colorTextSecondary }}
                                 />
-                              ) : lesson.lesson_type === 'text' ? (
-                                <FileTextOutlined style={{ color: token.colorTextSecondary }} />
+                              ) : lesson.lesson_type === "text" ? (
+                                <FileTextOutlined
+                                  style={{ color: token.colorTextSecondary }}
+                                />
                               ) : (
-                                <PlayCircleOutlined style={{ color: '#059669' }} />
+                                <PlayCircleOutlined
+                                  style={{ color: "#059669" }}
+                                />
                               )}
                               <Text style={{ fontSize: 14 }}>
                                 {chIdx + 1}.{lIdx + 1} {lesson.title}
@@ -517,7 +570,10 @@ export const CourseDetailPage: React.FC = () => {
                           </div>
                         ))
                       ) : (
-                        <Text type="secondary" style={{ fontSize: 13, fontStyle: 'italic' }}>
+                        <Text
+                          type="secondary"
+                          style={{ fontSize: 13, fontStyle: "italic" }}
+                        >
                           No lessons added to this chapter yet.
                         </Text>
                       )}
@@ -531,16 +587,23 @@ export const CourseDetailPage: React.FC = () => {
           {/* Instructor Bio Box */}
           <div
             style={{
-              padding: '24px 28px',
+              padding: "24px 28px",
               backgroundColor: token.colorBgContainer,
               borderRadius: 8,
               border: `1px solid ${token.colorBorder}`,
             }}
           >
-            <Title level={3} style={{ margin: '0 0 16px 0', fontSize: 22, letterSpacing: -0.4 }}>
+            <Title
+              level={3}
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: 22,
+                letterSpacing: -0.4,
+              }}
+            >
               Instructor Profile
             </Title>
-            <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+            <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
               <Avatar
                 size={54}
                 src={course.users?.avatar_url || undefined}
@@ -556,18 +619,24 @@ export const CourseDetailPage: React.FC = () => {
                 {instructorName.charAt(0)}
               </Avatar>
               <div>
-                <Text strong style={{ fontSize: 16, display: 'block' }}>
+                <Text strong style={{ fontSize: 16, display: "block" }}>
                   {instructorName}
                 </Text>
-                <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
-                  {course.users?.teacher_profile?.degree || 'Lead Instructor'}
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 13, display: "block", marginBottom: 8 }}
+                >
+                  {course.users?.teacher_profile?.degree || "Lead Instructor"}
                   {course.users?.teacher_profile?.expertise
                     ? ` · Specialist in ${course.users.teacher_profile.expertise}`
-                    : ''}
+                    : ""}
                 </Text>
-                <Paragraph type="secondary" style={{ fontSize: 14, margin: 0, lineHeight: 1.6 }}>
+                <Paragraph
+                  type="secondary"
+                  style={{ fontSize: 14, margin: 0, lineHeight: 1.6 }}
+                >
                   {course.users?.teacher_profile?.bio ||
-                    'Dedicated instructor committed to building production-grade learning curriculums with practical industry standards.'}
+                    "Dedicated instructor committed to building production-grade learning curriculums with practical industry standards."}
                 </Paragraph>
               </div>
             </div>
@@ -576,13 +645,13 @@ export const CourseDetailPage: React.FC = () => {
 
         {/* Right Column: Sticky Pricing & Enrollment Card */}
         <Col xs={24} lg={8}>
-          <div style={{ position: 'sticky', top: 88 }}>
+          <div style={{ position: "sticky", top: 88 }}>
             <Card
               style={{
                 borderRadius: 8,
                 borderColor: token.colorBorder,
                 backgroundColor: token.colorBgContainer,
-                boxShadow: '2px 2px 0px 0px #262626',
+                boxShadow: "2px 2px 0px 0px #262626",
               }}
               styles={{
                 body: { padding: 24 },
@@ -593,20 +662,20 @@ export const CourseDetailPage: React.FC = () => {
                 <div
                   style={{
                     height: 180,
-                    width: 'calc(100% + 48px)',
-                    margin: '-24px -24px 20px -24px',
-                    overflow: 'hidden',
-                    backgroundColor: '#303030',
-                    borderRadius: '8px 8px 0 0',
+                    width: "calc(100% + 48px)",
+                    margin: "-24px -24px 20px -24px",
+                    overflow: "hidden",
+                    backgroundColor: "#303030",
+                    borderRadius: "8px 8px 0 0",
                   }}
                 >
                   <img
                     src={course.thumbnail_url}
                     alt={course.title}
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
                     }}
                   />
                 </div>
@@ -617,9 +686,9 @@ export const CourseDetailPage: React.FC = () => {
                 <div style={{ marginBottom: 20 }}>
                   <div
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       marginBottom: 10,
                     }}
                   >
@@ -628,15 +697,20 @@ export const CourseDetailPage: React.FC = () => {
                       style={{
                         margin: 0,
                         fontWeight: 700,
-                        padding: '2px 10px',
+                        padding: "2px 10px",
                         borderRadius: 9999,
-                        textTransform: 'uppercase',
+                        textTransform: "uppercase",
                         fontSize: 11,
                       }}
                     >
-                      {enrollmentStatus.isAuthor ? 'Instructor View' : 'Enrolled'}
+                      {enrollmentStatus.isAuthor
+                        ? "Instructor View"
+                        : "Enrolled"}
                     </Tag>
-                    <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: 13, fontWeight: 600 }}
+                    >
                       {enrollmentStatus.progressPercent}% Completed
                     </Text>
                   </div>
@@ -651,9 +725,9 @@ export const CourseDetailPage: React.FC = () => {
                       />
                       <Text
                         type="secondary"
-                        style={{ fontSize: 12, display: 'block', marginTop: 4 }}
+                        style={{ fontSize: 12, display: "block", marginTop: 4 }}
                       >
-                        {enrollmentStatus.completedLessons} of{' '}
+                        {enrollmentStatus.completedLessons} of{" "}
                         {enrollmentStatus.totalLessons} lessons completed
                       </Text>
                     </div>
@@ -667,7 +741,7 @@ export const CourseDetailPage: React.FC = () => {
                       fontSize: 28,
                       letterSpacing: -0.5,
                       color: token.colorText,
-                      display: 'block',
+                      display: "block",
                     }}
                   >
                     {formatPrice(course.price)}
@@ -682,12 +756,12 @@ export const CourseDetailPage: React.FC = () => {
                           borderRadius: 9999,
                           fontWeight: 600,
                           fontSize: 11,
-                          backgroundColor: '#fef3c7',
-                          color: '#92400e',
-                          border: '1px solid #fde68a',
+                          backgroundColor: "#ecfdf5",
+                          color: "#059669",
+                          border: "1px solid #a7f3d0",
                         }}
                       >
-                        Payment Gateway Coming Soon
+                        PayOS · VietQR Instant Checkout
                       </Tag>
                     </div>
                   )}
@@ -710,43 +784,24 @@ export const CourseDetailPage: React.FC = () => {
                     backgroundColor: token.colorPrimary,
                     color: token.colorText,
                     border: `1px solid ${token.colorText}`,
-                    boxShadow: 'var(--shadow-hard)',
+                    boxShadow: "var(--shadow-hard)",
                     borderRadius: 4,
                     marginBottom: 16,
                   }}
                 >
                   {enrollmentStatus.isAuthor
-                    ? 'Enter Classroom (Instructor)'
+                    ? "Enter Classroom (Instructor)"
                     : enrollmentStatus.progressPercent === 100
-                    ? 'Review Course Material'
-                    : 'Continue Learning'}
+                      ? "Review Course Material"
+                      : "Continue Learning"}
                 </Button>
               ) : Number(course.price || 0) > 0 ? (
-                <Button
-                  size="large"
-                  block
-                  icon={<CreditCardOutlined />}
-                  onClick={handleEnrollClick}
-                  style={{
-                    height: 48,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    backgroundColor: '#f5f5f5',
-                    color: '#525252',
-                    border: `1px solid ${token.colorBorder}`,
-                    borderRadius: 4,
-                    marginBottom: 16,
-                  }}
-                >
-                  Buy Course (Checkout Coming Soon)
-                </Button>
-              ) : (
                 <Button
                   type="primary"
                   size="large"
                   block
                   loading={enrolling || statusLoading}
-                  icon={!isAuthenticated ? <LoginOutlined /> : <PlayCircleOutlined />}
+                  icon={!isAuthenticated ? <LoginOutlined /> : <CreditCardOutlined />}
                   onClick={handleEnrollClick}
                   style={{
                     height: 48,
@@ -755,33 +810,75 @@ export const CourseDetailPage: React.FC = () => {
                     backgroundColor: token.colorPrimary,
                     color: token.colorText,
                     border: `1px solid ${token.colorText}`,
-                    boxShadow: 'var(--shadow-hard)',
+                    boxShadow: "var(--shadow-hard)",
                     borderRadius: 4,
                     marginBottom: 16,
                   }}
                 >
-                  {!isAuthenticated ? 'Sign In To Enroll Free' : 'Enroll For Free'}
+                  {!isAuthenticated
+                    ? `Sign in to Buy · ${formatPrice(course.price)}`
+                    : `Buy Course · ${formatPrice(course.price)}`}
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  loading={enrolling || statusLoading}
+                  icon={
+                    !isAuthenticated ? (
+                      <LoginOutlined />
+                    ) : (
+                      <PlayCircleOutlined />
+                    )
+                  }
+                  onClick={handleEnrollClick}
+                  style={{
+                    height: 48,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    backgroundColor: token.colorPrimary,
+                    color: token.colorText,
+                    border: `1px solid ${token.colorText}`,
+                    boxShadow: "var(--shadow-hard)",
+                    borderRadius: 4,
+                    marginBottom: 16,
+                  }}
+                >
+                  {!isAuthenticated
+                    ? "Sign In To Enroll Free"
+                    : "Enroll For Free"}
                 </Button>
               )}
 
               {/* Checklist */}
-              <Divider style={{ margin: '16px 0' }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Divider style={{ margin: "16px 0" }} />
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
                 <Space size="small">
-                  <CheckCircleOutlined style={{ color: '#059669' }} />
-                  <Text style={{ fontSize: 13 }}>Full lifetime access to all lessons</Text>
+                  <CheckCircleOutlined style={{ color: "#059669" }} />
+                  <Text style={{ fontSize: 13 }}>
+                    Full lifetime access to all lessons
+                  </Text>
                 </Space>
                 <Space size="small">
-                  <CheckCircleOutlined style={{ color: '#059669' }} />
-                  <Text style={{ fontSize: 13 }}>Hands-on exercises & code samples</Text>
+                  <CheckCircleOutlined style={{ color: "#059669" }} />
+                  <Text style={{ fontSize: 13 }}>
+                    Hands-on exercises & code samples
+                  </Text>
                 </Space>
                 <Space size="small">
-                  <SafetyCertificateOutlined style={{ color: '#059669' }} />
-                  <Text style={{ fontSize: 13 }}>Official course completion record</Text>
+                  <SafetyCertificateOutlined style={{ color: "#059669" }} />
+                  <Text style={{ fontSize: 13 }}>
+                    Official course completion record
+                  </Text>
                 </Space>
                 <Space size="small">
-                  <GlobalOutlined style={{ color: '#059669' }} />
-                  <Text style={{ fontSize: 13 }}>Self-paced learning on any device</Text>
+                  <GlobalOutlined style={{ color: "#059669" }} />
+                  <Text style={{ fontSize: 13 }}>
+                    Self-paced learning on any device
+                  </Text>
                 </Space>
               </div>
             </Card>

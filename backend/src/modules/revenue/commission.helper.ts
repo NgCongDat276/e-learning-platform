@@ -2,7 +2,7 @@ import { commission_source, user_role } from "@prisma/client";
 import prisma from "../../prisma";
 
 export const DEFAULT_PLATFORM_FEE_RATE = 30;
-export const DEFAULT_MIN_PAYOUT_AMOUNT = 100_000;
+export const DEFAULT_MIN_PAYOUT_AMOUNT = 10_000;
 export const DEFAULT_ORDER_EXPIRY_MINUTES = 15;
 
 export interface PlatformSettingsValues {

@@ -5,14 +5,14 @@ export const createOrderSchema = z.object({
   courseId: z
     .string()
     .trim()
-    .min(1, "courseId (UUID hoặc slug) là bắt buộc"),
+    .min(1, "courseId (UUID or slug) is required"),
 });
 
 export const orderCodeParamSchema = z.object({
   orderCode: z.coerce
     .number()
-    .int("orderCode phải là số nguyên")
-    .positive("orderCode phải lớn hơn 0"),
+    .int("orderCode must be an integer")
+    .positive("orderCode must be positive"),
 });
 
 export const myOrdersQuerySchema = z.object({

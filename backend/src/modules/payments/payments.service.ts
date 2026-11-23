@@ -814,7 +814,7 @@ export class PaymentsService {
             balance_before: new Prisma.Decimal(balanceBefore),
             balance_after: new Prisma.Decimal(balanceAfter),
             order_id: order.id,
-            description: `Thu nhập bán khóa học "${order.courses.title}" (Đơn #${orderCode})`,
+            description: `Course sale revenue for "${order.courses.title}" (Order #${orderCode})`,
           },
         });
       }

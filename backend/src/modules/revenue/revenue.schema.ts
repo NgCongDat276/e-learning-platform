@@ -26,22 +26,22 @@ export const updateBankAccountSchema = z.object({
   bankAccountNumber: z
     .string()
     .trim()
-    .min(4, "Số tài khoản tối thiểu 4 ký tự")
+    .min(4, "Account number must be at least 4 characters")
     .max(50)
-    .regex(/^[A-Za-z0-9]+$/, "Số tài khoản chỉ gồm chữ cái và số"),
+    .regex(/^[A-Za-z0-9]+$/, "Account number must contain letters and digits only"),
   bankAccountName: z.string().trim().min(2).max(100),
 });
 
 export const createPayoutSchema = z.object({
   amount: z.coerce
     .number()
-    .positive("Số tiền rút phải lớn hơn 0")
-    .max(1_000_000_000, "Số tiền vượt quá giới hạn cho phép"),
+    .positive("Withdrawal amount must be greater than 0")
+    .max(1_000_000_000, "Amount exceeds maximum allowed limit"),
   lecturerNote: z.string().trim().max(500).optional(),
 });
 
 export const payoutIdParamSchema = z.object({
-  id: z.string().uuid("Payout ID không hợp lệ"),
+  id: z.string().uuid("Invalid payout ID"),
 });
 
 export const lecturerPayoutsQuerySchema = z.object({
@@ -77,15 +77,15 @@ export const updatePlatformSettingsSchema = z
       data.defaultPlatformFeeRate !== undefined ||
       data.minPayoutAmount !== undefined ||
       data.orderExpiryMinutes !== undefined,
-    { message: "Cần cung cấp ít nhất một trường cấu hình để cập nhật" },
+    { message: "At least one setting field must be provided" },
   );
 
 export const lecturerIdParamSchema = z.object({
-  lecturerId: z.string().uuid("lecturerId không hợp lệ"),
+  lecturerId: z.string().uuid("Invalid lecturerId"),
 });
 
 export const courseIdParamSchema = z.object({
-  courseId: z.string().uuid("courseId không hợp lệ"),
+  courseId: z.string().uuid("Invalid courseId"),
 });
 
 export const updateCommissionRateSchema = z.object({
@@ -106,7 +106,7 @@ export const completePayoutSchema = z.object({
   transactionReference: z
     .string()
     .trim()
-    .min(2, "Vui lòng nhập mã tham chiếu giao dịch ngân hàng")
+    .min(2, "Please enter bank transaction reference")
     .max(100),
   proofImageUrl: z.string().trim().url().optional().or(z.literal("")),
   adminNote: z.string().trim().max(500).optional(),
@@ -116,7 +116,7 @@ export const rejectPayoutSchema = z.object({
   adminNote: z
     .string()
     .trim()
-    .min(3, "Vui lòng nhập lý do từ chối yêu cầu rút tiền")
+    .min(3, "Please enter rejection reason")
     .max(500),
 });
 

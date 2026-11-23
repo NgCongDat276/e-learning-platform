@@ -362,7 +362,7 @@ export class RevenueService {
 
     if (amount < settings.minPayoutAmount) {
       throw new BadRequestError(
-        `Số tiền rút tối thiểu là ${settings.minPayoutAmount.toLocaleString("vi-VN")} ₫`,
+        `Minimum payout amount is ${settings.minPayoutAmount.toLocaleString("en-US")} VND`,
       );
     }
 
@@ -383,7 +383,7 @@ export class RevenueService {
       !teacherProfile.bank_account_name
     ) {
       throw new BadRequestError(
-        "Vui lòng cấu hình đầy đủ thông tin tài khoản ngân hàng trước khi tạo yêu cầu rút tiền.",
+        "Please configure your payout bank account before requesting a withdrawal.",
       );
     }
 
@@ -395,7 +395,7 @@ export class RevenueService {
       });
 
       if (!wallet) {
-        throw new BadRequestError("Số dư khả dụng của bạn hiện bằng 0 ₫");
+        throw new BadRequestError("Your available balance is currently 0 VND");
       }
 
       const available = Number(wallet.available_balance);
@@ -403,7 +403,7 @@ export class RevenueService {
 
       if (amount > available) {
         throw new BadRequestError(
-          `Số dư khả dụng không đủ (hiện có ${available.toLocaleString("vi-VN")} ₫)`,
+          `Insufficient available balance (${available.toLocaleString("en-US")} VND)`,
         );
       }
 
@@ -443,7 +443,7 @@ export class RevenueService {
           balance_before: new Prisma.Decimal(available),
           balance_after: new Prisma.Decimal(balanceAfter),
           payout_request_id: payout.id,
-          description: `Tạm giữ tiền cho yêu cầu rút ${amount.toLocaleString("vi-VN")} ₫ (${transferContent})`,
+          description: `Held for payout request of ${amount.toLocaleString("en-US")} VND (${transferContent})`,
         },
       });
 
@@ -471,7 +471,7 @@ export class RevenueService {
 
       if (updated.count === 0) {
         throw new BadRequestError(
-          "Không thể hủy yêu cầu rút tiền này (không tồn tại hoặc đã được xử lý).",
+          "Cannot cancel this payout request (not found or already processed).",
         );
       }
 
@@ -508,7 +508,7 @@ export class RevenueService {
           balance_before: new Prisma.Decimal(balanceBefore),
           balance_after: new Prisma.Decimal(balanceAfter),
           payout_request_id: payout.id,
-          description: `Hoàn lại ${amount.toLocaleString("vi-VN")} ₫ do giảng viên hủy yêu cầu rút tiền`,
+          description: `Refunded ${amount.toLocaleString("en-US")} VND due to lecturer payout cancellation`,
         },
       });
 
@@ -965,7 +965,7 @@ export class RevenueService {
 
       if (updated.count === 0) {
         throw new BadRequestError(
-          "Yêu cầu rút tiền không tồn tại hoặc đã được xử lý trước đó.",
+          "Payout request not found or already processed.",
         );
       }
 
@@ -1011,7 +1011,7 @@ export class RevenueService {
           balance_before: new Prisma.Decimal(available),
           balance_after: new Prisma.Decimal(available),
           payout_request_id: payout.id,
-          description: `Hoàn tất chi trả ${amount.toLocaleString("vi-VN")} ₫ (Mã GD: ${input.transactionReference})`,
+          description: `Completed payout of ${amount.toLocaleString("en-US")} VND (Ref: ${input.transactionReference})`,
         },
       });
 
@@ -1045,7 +1045,7 @@ export class RevenueService {
 
       if (updated.count === 0) {
         throw new BadRequestError(
-          "Yêu cầu rút tiền không tồn tại hoặc đã được xử lý trước đó.",
+          "Payout request not found or already processed.",
         );
       }
 
@@ -1091,7 +1091,7 @@ export class RevenueService {
           balance_before: new Prisma.Decimal(balanceBefore),
           balance_after: new Prisma.Decimal(balanceAfter),
           payout_request_id: payout.id,
-          description: `Hoàn lại ${amount.toLocaleString("vi-VN")} ₫ do từ chối rút tiền: ${input.adminNote}`,
+          description: `Refunded ${amount.toLocaleString("en-US")} VND due to payout rejection: ${input.adminNote}`,
         },
       });
 
