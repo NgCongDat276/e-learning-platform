@@ -9,6 +9,9 @@ import {
   LogoutOutlined,
   DashboardOutlined,
   TeamOutlined,
+  CreditCardOutlined,
+  WalletOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../../context/useAuth";
 
@@ -66,6 +69,11 @@ export const HomeHeader: React.FC = () => {
       icon: <UserOutlined />,
       label: <Link to="/profile">Account Settings</Link>,
     },
+    {
+      key: "my-orders",
+      icon: <CreditCardOutlined />,
+      label: <Link to="/my-orders">My Orders</Link>,
+    },
     ...(isAdmin
       ? [
           {
@@ -78,6 +86,11 @@ export const HomeHeader: React.FC = () => {
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
           },
+          {
+            key: "admin-finance",
+            icon: <DollarOutlined />,
+            label: <Link to="/admin/finance">Finance & Payouts</Link>,
+          },
         ]
       : []),
     ...(isLecturer
@@ -86,6 +99,11 @@ export const HomeHeader: React.FC = () => {
             key: "teacher-courses",
             icon: <DashboardOutlined />,
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
+          },
+          {
+            key: "teacher-revenue",
+            icon: <WalletOutlined />,
+            label: <Link to="/teacher/revenue">Revenue & Wallet</Link>,
           },
         ]
       : [

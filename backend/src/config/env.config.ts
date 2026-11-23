@@ -24,4 +24,12 @@ export const envConfig = {
     BUCKET_NAME: process.env.R2_BUCKET_NAME || "elearning-platform-storage",
     PUBLIC_URL: process.env.R2_PUBLIC_URL || "",
   },
+
+  // PayOS Payment Gateway & Frontend URL
+  PAYOS: {
+    CLIENT_ID: process.env.PAYOS_CLIENT_ID || "",
+    API_KEY: process.env.PAYOS_API_KEY || "",
+    CHECKSUM_KEY: process.env.PAYOS_CHECKSUM_KEY || "",
+  },
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
 } as const;

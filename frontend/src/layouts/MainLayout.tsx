@@ -20,6 +20,9 @@ import {
   AppstoreOutlined,
   TeamOutlined,
   ReadOutlined,
+  CreditCardOutlined,
+  WalletOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../context/useAuth";
 
@@ -91,6 +94,11 @@ export const MainLayout: React.FC = () => {
       icon: <ReadOutlined />,
       label: <Link to="/my-courses">My Courses</Link>,
     },
+    {
+      key: "my-orders",
+      icon: <CreditCardOutlined />,
+      label: <Link to="/my-orders">My Orders</Link>,
+    },
     ...(isAdmin
       ? [
           {
@@ -103,6 +111,11 @@ export const MainLayout: React.FC = () => {
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
           },
+          {
+            key: "admin-finance",
+            icon: <DollarOutlined />,
+            label: <Link to="/admin/finance">Finance & Payouts</Link>,
+          },
         ]
       : []),
     ...(isLecturer
@@ -111,6 +124,11 @@ export const MainLayout: React.FC = () => {
             key: "teacher-courses",
             icon: <DashboardOutlined />,
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
+          },
+          {
+            key: "teacher-revenue",
+            icon: <WalletOutlined />,
+            label: <Link to="/teacher/revenue">Revenue & Wallet</Link>,
           },
         ]
       : []),
@@ -151,6 +169,11 @@ export const MainLayout: React.FC = () => {
             icon: <DashboardOutlined />,
             label: <Link to="/teacher/courses">Teaching Workspace</Link>,
           },
+          {
+            key: "/teacher/revenue",
+            icon: <WalletOutlined />,
+            label: <Link to="/teacher/revenue">Revenue & Wallet</Link>,
+          },
         ]
       : []),
     ...(isAdmin
@@ -164,6 +187,11 @@ export const MainLayout: React.FC = () => {
             key: "/admin/users",
             icon: <TeamOutlined />,
             label: <Link to="/admin/users">User Management</Link>,
+          },
+          {
+            key: "/admin/finance",
+            icon: <DollarOutlined />,
+            label: <Link to="/admin/finance">Finance & Payouts</Link>,
           },
         ]
       : []),
